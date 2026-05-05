@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BioPath - Intelligence Hub</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
@@ -627,7 +627,6 @@
             font-weight: 400;
             opacity: 0.7;
             transition: opacity 0.3s;
-            white-space: normal;
         }
 
         /* Moving laser sweep line behind text */
@@ -664,7 +663,6 @@
             color: var(--muted); 
             text-decoration: none; 
             transition: all 0.25s; 
-            flex-shrink: 0;
         }
         .btn-search:hover { 
             border-color: var(--bio-border); 
@@ -694,8 +692,6 @@
         }
         .gateway-terminal {
             width: 520px;
-            max-width: 90vw;
-            box-sizing: border-box;
             background: var(--surface);
             border: 1px solid var(--bio-border);
             border-radius: 16px;
@@ -778,36 +774,75 @@
         }
         
         @media (max-width: 768px) {
+            .topbar { padding: 10px 0; height: auto; }
             .topbar-inner { 
                 display: flex; 
                 justify-content: space-between; 
                 align-items: center; 
-                padding: 0 12px;
+                padding: 0 16px;
                 flex-wrap: wrap;
-                gap: 10px;
             }
-            .nav-links { gap: 2px; order: 3; width: 100%; justify-content: center; padding-top: 5px; flex-wrap: wrap;}
-            .nav-links a { padding: 6px 8px; font-size: 0.7rem; }
             
-            .brand { position: relative; left: auto; transform: none; order: 1; }
-            .brand::before, .brand::after { content: none !important; }
-            .brand-mark { width: 38px; height: 38px; }
-            .brand-mark svg { width: 18px; height: 18px; }
-            .brand-wordmark { font-size: 1.25rem; }
+            /* 1. Ground the Logo */
+            .brand { 
+                position: relative; 
+                left: auto; 
+                top: auto; 
+                transform: none; 
+                order: 1; 
+                padding: 4px 8px;
+                background: transparent; 
+                border: none;
+                box-shadow: none;
+            }
+            .brand::before, .brand::after { display: none !important; }
+            .brand-mark { width: 34px; height: 34px; }
+            .brand-mark svg { width: 16px; height: 16px; }
+            .brand-wordmark { font-size: 1.3rem; }
             .brand-wordmark span { display: inline !important; } 
-            .brand-wordmark::after, .brand-wordmark::before { content: none !important; }
+            .brand-wordmark::after, .brand-wordmark::before { display: none !important; }
+            
+            /* 2. Theme Toggle Placement */
+            .topbar-right { order: 2; }
+            .sys-badge { display: none; }
+            .theme-btn { width: 36px; height: 36px; font-size: 0.9rem; }
 
-            /* Advanced Mobile Adjustments */
+            /* 3. Horizontal Scrollable Navbar */
+            .nav-links { 
+                order: 3; 
+                width: 100%; 
+                display: flex; 
+                flex-wrap: nowrap; 
+                overflow-x: auto; 
+                padding: 16px 0 4px 0; 
+                margin-top: 4px;
+                border-top: 1px solid rgba(0, 255, 163, 0.1);
+                justify-content: flex-start;
+                gap: 12px;
+                scrollbar-width: none; /* Firefox */
+                -ms-overflow-style: none;  /* IE and Edge */
+                -webkit-overflow-scrolling: touch;
+            }
+            .nav-links::-webkit-scrollbar { display: none; }
+            .nav-links a { padding: 6px 12px; font-size: 0.75rem; flex-shrink: 0; }
+
+            /* Advanced Mobile Card Layout */
             .main-grid { padding: 20px 16px 60px; gap: 20px; }
             .opp-card { padding: 20px; margin-bottom: 16px; }
-            .card-top { flex-direction: column; gap: 16px; }
-            .score-ring-wrap { align-self: flex-start; }
-            .meta-row { grid-template-columns: 1fr; padding: 12px; }
+            .card-top { flex-direction: column; gap: 16px; align-items: flex-start; }
             
+            /* Pin the Score Ring */
+            .score-ring-wrap { position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; }
+            .score-ring-wrap svg { width: 50px; height: 50px; }
+            .ring-track, .ring-fill { stroke-width: 6; }
+            .score-num { font-size: 0.85rem; }
+            .score-pct { font-size: 0.45rem; }
+            
+            .meta-row { grid-template-columns: 1fr; padding: 12px; }
             .cta-row { flex-direction: column; align-items: stretch; gap: 12px; }
             .cta-group { width: 100%; display: flex; gap: 8px; }
             .btn-creative-gateway { flex: 1; justify-content: center; padding: 12px; text-align: center; }
-            .btn-creative-gateway span { font-size: 0.75rem; text-align: center; }
+            .btn-creative-gateway span { font-size: 0.75rem; text-align: center; white-space: normal; line-height: 1.4;}
             .results-header { flex-direction: column; align-items: flex-start; gap: 12px; }
             
             .gateway-terminal { padding: 20px; width: 92vw; }
@@ -1015,7 +1050,7 @@
 
                             {% if score > 0 %}
                             <div class="score-ring-wrap">
-                                <svg width="78" height="78" viewBox="0 0 78 78">
+                                <svg viewBox="0 0 78 78">
                                     <circle class="ring-track" cx="39" cy="39" r="34"/>
                                     <circle class="ring-fill" cx="39" cy="39" r="34"
                                         stroke-dasharray="213.6"
