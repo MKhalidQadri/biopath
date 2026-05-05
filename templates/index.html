@@ -1,1366 +1,1255 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BioPath - Intelligence Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-      /* =====================================================
-         DESIGN SYSTEM: BIOPUNK LAB TERMINAL
-         Aesthetic: Bioluminescent science, dark precision
-      ===================================================== */
-      :root {
-        --bio: #00ffa3;
-        --bio-dim: #00c97a;
-        --bio-glow: rgba(0, 255, 163, 0.18);
-        --bio-border: rgba(0, 255, 163, 0.22);
-        --accent: #3bffd6;
-        --warn: #ffce47;
-        --bg: #050a12;
-        --surface: #080f1c;
-        --glass: rgba(10, 22, 40, 0.85);
-        --glass-light: rgba(0, 255, 163, 0.04);
-        --text: #e2f4ee;
-        --muted: #5f8a78;
-        --line: rgba(0, 255, 163, 0.1);
+        /* =====================================================
+           DESIGN SYSTEM: BIOPUNK LAB TERMINAL (ARIAL EDITION)
+           Aesthetic: Bioluminescent science, dark precision
+        ===================================================== */
+        :root {
+            --bio: #00ffa3;
+            --bio-dim: #00c97a;
+            --bio-glow: rgba(0, 255, 163, 0.18);
+            --bio-border: rgba(0, 255, 163, 0.22);
+            --accent: #3bffd6;
+            --warn: #ffce47;
+            --bg: #050a12;
+            --surface: #080f1c;
+            --glass: rgba(10, 22, 40, 0.85);
+            --glass-light: rgba(0, 255, 163, 0.04);
+            --text: #e2f4ee;
+            --muted: #8ba89a; 
+            --line: rgba(0, 255, 163, 0.1);
 
-        /* Light overrides */
-        --bg-l: #f0faf6;
-        --surface-l: #ffffff;
-        --glass-l: rgba(255, 255, 255, 0.9);
-        --text-l: #0b1f18;
-        --muted-l: #4a7a68;
-        --line-l: rgba(0, 100, 70, 0.12);
-      }
-
-      body {
-        font-family: 'DM Sans', sans-serif;
-        background-color: var(--bg);
-        color: var(--text);
-        min-height: 100vh;
-        overflow-x: hidden;
-        transition: background-color 0.4s ease, color 0.4s ease;
-        margin: 0;
-      }
-
-      body.light-mode {
-        --bg: var(--bg-l);
-        --surface: var(--surface-l);
-        --glass: var(--glass-l);
-        --text: var(--text-l);
-        --muted: var(--muted-l);
-        --line: var(--line-l);
-        --bio-glow: rgba(0, 160, 100, 0.12);
-        --bio-border: rgba(0, 130, 80, 0.2);
-      }
-
-      /* ── Canvas Background ── */
-      #particle-canvas {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        pointer-events: none;
-        z-index: 0;
-        opacity: 0.35;
-      }
-
-      body.light-mode #particle-canvas { opacity: 0.12; }
-
-      /* ── Grid Overlay ── */
-      body::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        background-image:
-          linear-gradient(rgba(0,255,163,0.025) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(0,255,163,0.025) 1px, transparent 1px);
-        background-size: 40px 40px;
-        pointer-events: none;
-        z-index: 0;
-        transition: opacity 0.5s;
-      }
-      body.light-mode::before { opacity: 0.4; }
-
-      .content-wrap { position: relative; z-index: 1; }
-
-      /* ── NAVBAR ── */
-      .topbar {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        background: rgba(5, 10, 18, 0.88);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-bottom: 1px solid var(--bio-border);
-        height: 75px;
-        display: flex;
-        align-items: center;
-        transition: background 0.4s ease;
-      }
-      body.light-mode .topbar { background: rgba(240, 250, 246, 0.9); }
-
-      .topbar-inner {
-        max-width: 1320px;
-        width: 100%;
-        margin: 0 auto;
-        padding: 0 28px;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      /* Left nav links */
-      .nav-links {
-        display: flex;
-        gap: 8px;
-        list-style: none;
-        margin: 0; padding: 0;
-        z-index: 2;
-      }
-
-      .nav-links a {
-        font-family: 'Space Mono', monospace;
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        text-decoration: none;
-        color: var(--muted);
-        padding: 8px 14px;
-        border-radius: 8px;
-        border: 1px solid transparent;
-        transition: all 0.25s ease;
-      }
-      .nav-links a:hover, .nav-links a.active {
-        color: var(--bio);
-        border-color: var(--bio-border);
-        background: var(--bio-glow);
-        text-shadow: 0 0 12px rgba(0,255,163,0.5);
-      }
-
-      /* Center brand - Absolute positioning keeps it dead center on desktop */
-      .brand {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        z-index: 2;
-      }
-
-      .brand-mark {
-        width: 42px;
-        height: 42px;
-        border: 1.5px solid var(--bio);
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0, 255, 163, 0.06);
-        box-shadow:
-          0 0 16px rgba(0, 255, 163, 0.2),
-          inset 0 0 10px rgba(0, 255, 163, 0.05);
-        animation: pulse-mark 3s ease-in-out infinite;
-      }
-      @keyframes pulse-mark {
-        0%,
-        100% {
-          box-shadow:
-            0 0 16px rgba(0, 255, 163, 0.2),
-            inset 0 0 10px rgba(0, 255, 163, 0.05);
+            /* Light overrides */
+            --bg-l: #f0faf6;
+            --surface-l: #ffffff;
+            --glass-l: rgba(255, 255, 255, 0.9);
+            --text-l: #0b1f18;
+            --muted-l: #4a7a68;
+            --line-l: rgba(0, 100, 70, 0.12);
         }
-        50% {
-          box-shadow:
-            0 0 28px rgba(0, 255, 163, 0.4),
-            inset 0 0 16px rgba(0, 255, 163, 0.1);
+
+        body {
+            /* PERMANENT FONT CHANGE TO ARIAL */
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color 0.4s ease, color 0.4s ease;
+            margin: 0;
         }
-      }
-      .brand-mark i {
-        color: var(--bio);
-        font-size: 1.3rem;
-      }
 
-      .brand-wordmark {
-        font-family: "Syne", sans-serif;
-        font-weight: 800;
-        font-size: 1.7rem;
-        color: var(--text);
-        letter-spacing: -0.04em;
-        line-height: 1;
-      }
-      .brand-wordmark span {
-        color: var(--bio);
-      }
-
-      /* Right controls */
-      .topbar-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        z-index: 2;
-      }
-
-      .sys-badge {
-        font-family: "Space Mono", monospace;
-        font-size: 0.65rem;
-        color: var(--bio);
-        background: var(--bio-glow);
-        border: 1px solid var(--bio-border);
-        padding: 6px 12px;
-        border-radius: 6px;
-        letter-spacing: 0.06em;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .sys-badge::before {
-        content: "";
-        width: 6px;
-        height: 6px;
-        background: var(--bio);
-        border-radius: 50%;
-        animation: blink 1.8s ease-in-out infinite;
-      }
-      @keyframes blink {
-        0%,
-        100% {
-          opacity: 1;
+        body.light-mode {
+            --bg: var(--bg-l);
+            --surface: var(--surface-l);
+            --glass: var(--glass-l);
+            --text: var(--text-l);
+            --muted: var(--muted-l);
+            --line: var(--line-l);
+            --bio-glow: rgba(0, 160, 100, 0.12);
+            --bio-border: rgba(0, 130, 80, 0.2);
         }
-        50% {
-          opacity: 0.2;
+
+        /* ── Canvas Background ── */
+        #particle-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.35;
         }
-      }
 
-      .theme-btn {
-        width: 42px;
-        height: 42px;
-        border-radius: 10px;
-        border: 1px solid var(--bio-border);
-        background: var(--bio-glow);
-        color: var(--bio);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        transition: all 0.25s;
-      }
-      .theme-btn:hover {
-        transform: rotate(20deg) scale(1.1);
-        border-color: var(--bio);
-      }
+        body.light-mode #particle-canvas { opacity: 0.12; }
 
-      /* ── MAIN LAYOUT ── */
-      .main-grid {
-        max-width: 1320px;
-        margin: 0 auto;
-        padding: 40px 28px 60px;
-        display: grid;
-        grid-template-columns: 380px 1fr;
-        gap: 28px;
-        align-items: start;
-      }
-
-      /* ── PANEL / CARD ── */
-      .panel {
-        background: var(--glass);
-        border: 1px solid var(--bio-border);
-        border-radius: 20px;
-        -webkit-backdrop-filter: blur(12px);
-        backdrop-filter: blur(12px);
-        position: relative;
-        overflow: hidden;
-        transition: background 0.4s ease;
-      }
-      .panel::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          var(--bio),
-          transparent
-        );
-        opacity: 0.5;
-      }
-
-      .panel-head {
-        padding: 22px 26px 18px;
-        border-bottom: 1px solid var(--line);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .panel-head-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: var(--bio-glow);
-        border: 1px solid var(--bio-border);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--bio);
-        font-size: 1rem;
-      }
-
-      .panel-title {
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 0.95rem;
-        color: var(--text);
-        letter-spacing: -0.01em;
-      }
-      .panel-subtitle {
-        font-family: "Space Mono", monospace;
-        font-size: 0.62rem;
-        color: var(--muted);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        margin-top: 1px;
-      }
-      .panel-body {
-        padding: 24px 26px;
-      }
-
-      /* ── FORM ELEMENTS ── */
-      .field-label {
-        font-family: "Space Mono", monospace;
-        font-size: 0.65rem;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .field-label::before {
-        content: "//";
-        color: var(--bio);
-        opacity: 0.6;
-      }
-
-      /* 💡 THE DROPDOWN FIX (WINDOWS/CHROME COMPATIBLE) */
-      .bio-select {
-        width: 100%;
-        background-color: var(--surface) !important;
-        border: 1px solid var(--bio-border);
-        border-radius: 12px;
-        color: var(--text) !important;
-        font-family: "DM Sans", sans-serif;
-        font-size: 0.95rem;
-        padding: 14px 16px;
-        appearance: none;
-        -webkit-appearance: none;
-        outline: none;
-        transition: all 0.25s;
-        cursor: pointer;
-      }
-      .bio-select:focus {
-        border-color: var(--bio);
-        box-shadow: 0 0 0 3px rgba(0, 255, 163, 0.1);
-      }
-
-      .bio-select option {
-        background-color: var(--surface) !important;
-        color: var(--text) !important;
-        font-weight: 500;
-      }
-
-      body.light-mode .bio-select {
-        background-color: #f0faf6 !important;
-        color: var(--text-l) !important;
-      }
-      body.light-mode .bio-select option {
-        background-color: #ffffff !important;
-        color: var(--text-l) !important;
-      }
-
-      .select-wrap {
-        position: relative;
-      }
-      .select-wrap::after {
-        content: "⌄";
-        position: absolute;
-        right: 16px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--bio);
-        pointer-events: none;
-        font-size: 1.2rem;
-      }
-
-      /* ── SCAN BUTTON ── */
-      .scan-btn {
-        width: 100%;
-        padding: 16px;
-        border: none;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #00ffa3 0%, #00c97a 100%);
-        color: #050a12;
-        font-family: "Syne", sans-serif;
-        font-weight: 800;
-        font-size: 1rem;
-        letter-spacing: 0.04em;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s ease;
-      }
-      .scan-btn::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-          135deg,
-          transparent 40%,
-          rgba(255, 255, 255, 0.25) 100%
-        );
-      }
-      .scan-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(0, 255, 163, 0.35);
-      }
-      .scan-btn .btn-inner {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        position: relative;
-        z-index: 1;
-      }
-
-      .bio-spinner {
-        width: 18px;
-        height: 18px;
-        border: 3px solid rgba(5, 10, 18, 0.2);
-        border-top-color: #050a12;
-        border-radius: 50%;
-        animation: spin 0.7s linear infinite;
-        display: none;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
+        /* ── Grid Overlay ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,255,163,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,163,0.025) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 0.5s;
         }
-      }
+        body.light-mode::before { opacity: 0.4; }
 
-      /* ── AI ROADMAP SIDEBAR ── */
-      .roadmap-panel {
-        margin-top: 24px;
-      }
-      .roadmap-item {
-        padding: 16px;
-        border-radius: 12px;
-        background: var(--glass-light);
-        border: 1px solid var(--line);
-        margin-bottom: 12px;
-        transition: border-color 0.2s;
-      }
-      .roadmap-item:hover {
-        border-color: var(--bio-border);
-      }
-      .roadmap-role {
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 0.9rem;
-        color: var(--text);
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .roadmap-role::before {
-        content: "▸";
-        color: var(--bio);
-        font-size: 0.8rem;
-      }
-      .skill-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 5px 12px;
-        border-radius: 6px;
-        font-family: "Space Mono", monospace;
-        font-size: 0.65rem;
-        letter-spacing: 0.02em;
-        background: rgba(0, 255, 163, 0.07);
-        color: var(--bio-dim);
-        border: 1px solid rgba(0, 255, 163, 0.15);
-        margin: 3px 3px 0 0;
-      }
-
-      /* ── RIGHT COLUMN HEADER ── */
-      .results-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 24px;
-      }
-      .results-title {
-        font-family: "Syne", sans-serif;
-        font-weight: 800;
-        font-size: 1.6rem;
-        letter-spacing: -0.03em;
-        color: var(--text);
-        margin: 0;
-      }
-      .results-title span {
-        color: var(--bio);
-      }
-      .record-count {
-        font-family: "Space Mono", monospace;
-        font-size: 0.75rem;
-        color: var(--muted);
-        background: var(--bio-glow);
-        border: 1px solid var(--bio-border);
-        padding: 8px 16px;
-        border-radius: 8px;
-        letter-spacing: 0.06em;
-        font-weight: 700;
-      }
-
-      /* ── OPP CARD ── */
-      .opp-card {
-        background: var(--glass);
-        border: 1px solid var(--bio-border);
-        border-radius: 20px;
-        padding: 32px;
-        margin-bottom: 24px;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        animation: card-in 0.5s ease both;
-      }
-      @keyframes card-in {
-        from {
-          opacity: 0;
-          transform: translateY(16px);
+        /* ── KASHMIRI WATERMARK ── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url('/static/img/chinar-leaf-user.png');
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: 50%;
+            opacity: 0.3; 
+            z-index: 0;
+            pointer-events: none;
+            filter: grayscale(100%) invert(1) brightness(1.2) sepia(1) saturate(5) hue-rotate(90deg);
+            transition: opacity 0.4s ease;
         }
-        to {
-          opacity: 1;
-          transform: translateY(0);
+
+        body.light-mode::after {
+            opacity: 0.8;
+            mix-blend-mode: multiply;
+            filter: grayscale(100%) sepia(1) hue-rotate(90deg) saturate(5) contrast(1.5);
         }
-      }
-      .opp-card:hover {
-        transform: translateY(-6px);
-        border-color: rgba(0, 255, 163, 0.45);
-        box-shadow:
-          0 24px 48px rgba(0, 0, 0, 0.3),
-          0 0 0 1px rgba(0, 255, 163, 0.1);
-      }
-      .opp-card::after {
-        content: "";
-        position: absolute;
-        top: -100%;
-        left: 0;
-        right: 0;
-        height: 100%;
-        background: linear-gradient(
-          to bottom,
-          transparent,
-          rgba(0, 255, 163, 0.03),
-          transparent
-        );
-        transition: top 0.6s ease;
-        pointer-events: none;
-      }
-      .opp-card:hover::after {
-        top: 100%;
-      }
-      .opp-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 24px;
-        right: 24px;
-        height: 1px;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          var(--bio-border),
-          transparent
-        );
-      }
 
-      .card-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 16px;
-        margin-bottom: 16px;
-      }
-      .card-index {
-        font-family: "Space Mono", monospace;
-        font-size: 0.65rem;
-        color: var(--muted);
-        letter-spacing: 0.08em;
-        margin-bottom: 8px;
-      }
-      .card-title {
-        font-family: "Syne", sans-serif;
-        font-weight: 800;
-        font-size: 1.3rem;
-        letter-spacing: -0.03em;
-        color: var(--text);
-        line-height: 1.2;
-        margin-bottom: 14px;
-      }
-
-      .meta-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-      }
-      .meta-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-family: "Space Mono", monospace;
-        font-size: 0.72rem;
-        color: var(--muted);
-        letter-spacing: 0.04em;
-      }
-      .meta-item i {
-        color: var(--bio);
-        font-size: 0.8rem;
-      }
-      .card-desc {
-        font-size: 0.95rem;
-        line-height: 1.75;
-        color: var(--muted);
-        margin: 20px 0;
-        font-weight: 400;
-      }
-
-      /* ── SCORE RING ── */
-      .score-ring-wrap {
-        flex-shrink: 0;
-        position: relative;
-        width: 78px;
-        height: 78px;
-      }
-      .score-ring-wrap svg {
-        transform: rotate(-90deg);
-        width: 100%;
-        height: 100%;
-      }
-      .ring-track {
-        fill: none;
-        stroke: rgba(0, 255, 163, 0.08);
-        stroke-width: 5;
-      }
-      .ring-fill {
-        fill: none;
-        stroke: var(--bio);
-        stroke-width: 5;
-        stroke-linecap: round;
-        transition: stroke-dashoffset 1.6s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .score-label {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-      .score-num {
-        font-family: "Space Mono", monospace;
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: var(--bio);
-        line-height: 1;
-      }
-      .score-pct {
-        font-family: "Space Mono", monospace;
-        font-size: 0.55rem;
-        color: var(--muted);
-        margin-top: 2px;
-      }
-
-      /* ── SKILLS TAGS ── */
-      .tags-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 24px;
-      }
-      .tag {
-        font-family: "Space Mono", monospace;
-        font-size: 0.68rem;
-        letter-spacing: 0.04em;
-        padding: 6px 14px;
-        border-radius: 6px;
-        background: rgba(0, 255, 163, 0.04);
-        border: 1px solid rgba(0, 255, 163, 0.12);
-        color: var(--muted);
-        transition: all 0.2s;
-      }
-      .tag:hover {
-        border-color: var(--bio-border);
-        color: var(--bio-dim);
-      }
-
-      /* ── CTA BUTTONS ── */
-      .cta-row {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-
-      .btn-view {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 24px;
-        border-radius: 10px;
-        border: 1px solid var(--bio);
-        background: rgba(0, 255, 163, 0.06);
-        color: var(--bio);
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 0.85rem;
-        text-decoration: none;
-        transition: all 0.25s;
-      }
-      .btn-view:hover {
-        background: var(--bio);
-        color: #050a12;
-        box-shadow: 0 8px 20px rgba(0, 255, 163, 0.3);
-      }
-
-      .btn-direct {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 24px;
-        border-radius: 10px;
-        border: 1px solid rgba(0, 255, 163, 0.4);
-        background: var(--glass);
-        color: var(--bio);
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 0.85rem;
-        text-decoration: none;
-        transition: all 0.25s;
-      }
-      .btn-direct:hover {
-        background: rgba(0, 255, 163, 0.15);
-        border-color: var(--bio);
-        box-shadow: 0 4px 15px rgba(0, 255, 163, 0.2);
-      }
-
-      .btn-search {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 16px;
-        border-radius: 10px;
-        border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.03);
-        color: var(--muted);
-        font-family: "DM Sans", sans-serif;
-        font-weight: 500;
-        font-size: 0.85rem;
-        text-decoration: none;
-        transition: all 0.25s;
-      }
-      .btn-search:hover {
-        border-color: var(--bio-border);
-        color: var(--text);
-      }
-
-      /* ── SKELETON ── */
-      #skeleton-loader {
-        display: none;
-      }
-      .skel-card {
-        height: 260px;
-        border-radius: 20px;
-        background: linear-gradient(
-          90deg,
-          var(--glass) 25%,
-          rgba(0, 255, 163, 0.03) 50%,
-          var(--glass) 75%
-        );
-        background-size: 200% 100%;
-        animation: shimmer 1.6s infinite linear;
-        border: 1px solid var(--bio-border);
-        margin-bottom: 24px;
-      }
-      @keyframes shimmer {
-        0% {
-          background-position: 200% 0;
+        /* ── FLOATING CHINAR LEAVES ── */
+        .chinar-leaf-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
         }
-        100% {
-          background-position: -200% 0;
+
+        .chinar-leaf {
+            position: absolute;
+            top: -200px;
+            width: 150px;
+            height: 150px;
+            background-image: url('/static/img/chinar-leaf-user.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.3;
+            animation: fall linear infinite;
+            filter: grayscale(100%) invert(1) brightness(1.2) sepia(1) saturate(5) hue-rotate(90deg);
         }
-      }
 
-      /* ── FOOTER ── */
-      .bio-footer {
-        border-top: 1px solid var(--bio-border);
-        background: rgba(5, 10, 18, 0.8);
-        -webkit-backdrop-filter: blur(10px);
-        backdrop-filter: blur(10px);
-        padding: 40px 0;
-        position: relative;
-        transition: background 0.4s ease;
-        margin-top: 40px;
-      }
-      body.light-mode .bio-footer {
-        background: rgba(240, 250, 246, 0.9);
-      }
-      .footer-inner {
-        max-width: 1320px;
-        margin: 0 auto;
-        padding: 0 28px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 20px;
-      }
-      .footer-label {
-        font-family: "Space Mono", monospace;
-        font-size: 0.65rem;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 6px;
-      }
-      .footer-name {
-        font-family: "Syne", sans-serif;
-        font-weight: 800;
-        font-size: 1.3rem;
-        color: var(--bio);
-        letter-spacing: -0.02em;
-      }
-      .footer-right {
-        text-align: right;
-      }
-      .footer-dept {
-        font-size: 0.85rem;
-        color: var(--muted);
-        font-weight: 400;
-      }
-      .footer-uni {
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 0.95rem;
-        color: var(--bio-dim);
-        margin-top: 4px;
-      }
+        .chinar-leaf:nth-child(1) { left: 10%; animation-duration: 25s; animation-delay: 0s; width: 120px; height: 120px; }
+        .chinar-leaf:nth-child(2) { left: 35%; animation-duration: 35s; animation-delay: -10s; width: 180px; height: 180px; }
+        .chinar-leaf:nth-child(3) { left: 65%; animation-duration: 22s; animation-delay: -5s; width: 140px; height: 140px; }
+        .chinar-leaf:nth-child(4) { left: 85%; animation-duration: 40s; animation-delay: -15s; width: 200px; height: 200px; }
 
-      /* ── DIVIDER SECTION ── */
-      .section-divider {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 12px 0 24px;
-      }
-      .divider-line {
-        flex: 1;
-        height: 1px;
-        background: var(--line);
-      }
-      .divider-label {
-        font-family: "Space Mono", monospace;
-        font-size: 0.65rem;
-        letter-spacing: 0.1em;
-        color: var(--muted);
-        text-transform: uppercase;
-      }
-
-      /* 💡 THE MOBILE LAYOUT AND TEXT FIX */
-      @media (max-width: 960px) {
-        .main-grid {
-          grid-template-columns: 1fr;
+        @keyframes fall {
+            0% { transform: translateY(-20vh) rotate(0deg) translateX(0); opacity: 0; }
+            10% { opacity: 0.02; }
+            90% { opacity: 0.02; }
+            100% { transform: translateY(120vh) rotate(180deg) translateX(50px); opacity: 0; }
         }
+
+        body.light-mode .chinar-leaf { 
+            opacity: 0.9; 
+            mix-blend-mode: multiply;
+            filter: grayscale(100%) sepia(1) hue-rotate(90deg) saturate(5) contrast(1.5);
+        }
+
+        .content-wrap { position: relative; z-index: 1; }
+
+        /* ── NAVBAR ── */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(5, 10, 18, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--bio-border);
+            height: 75px;
+            display: flex;
+            align-items: center;
+            transition: background 0.4s ease;
+        }
+        body.light-mode .topbar { background: rgba(240, 250, 246, 0.9); }
+
         .topbar-inner {
-          padding: 0 16px;
+            max-width: 1320px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 28px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        .sys-badge {
-          display: none;
-        }
-        .brand-wordmark {
-          font-size: 1.35rem;
-        }
-      }
 
-      @media (max-width: 768px) {
-        .topbar-inner {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0 12px;
-          flex-wrap: wrap; /* Allows wrapping on tiny screens */
-          gap: 10px;
-        }
         .nav-links {
-          gap: 4px;
-          order: 3; /* Push links to bottom row */
-          width: 100%;
-          justify-content: center;
-          padding-top: 5px;
+            display: flex;
+            gap: 8px;
+            list-style: none;
+            margin: 0; padding: 0;
+            z-index: 2;
         }
-        .nav-links a {
-          padding: 6px 10px;
-          font-size: 0.7rem;
-        }
-        
-        /* Stop the logo from overlapping by removing absolute positioning */
-        .brand {
-          position: relative;
-          left: auto;
-          transform: none;
-          order: 1;
-        }
-        
-        /* Resize logo elements to fit gracefully */
-        .brand-mark { width: 34px; height: 34px; }
-        .brand-mark i { font-size: 1rem; }
-        .brand-wordmark { font-size: 1.25rem; }
-        
-        /* Force 'Path' to stay visible and eliminate the injected 'AI' */
-        .brand-wordmark span { display: inline !important; }
-        .brand-wordmark::after { content: none !important; }
-        
-        .topbar-right { order: 2; }
-        .topbar { height: auto; padding: 10px 0; }
-        .theme-btn { width: 36px; height: 36px; font-size: 0.9rem; }
-        .btn-full { max-width: 100%; }
-      }
-    </style>
-  </head>
 
-  <body data-bs-theme="dark">
+        .nav-links a {
+            font-size: 0.8rem;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            text-decoration: none;
+            color: var(--muted);
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.25s ease;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--bio);
+            border-color: var(--bio-border);
+            background: var(--bio-glow);
+            text-shadow: 0 0 12px rgba(0,255,163,0.5);
+        }
+
+        /* ── HYPER-ADVANCED HUD EMBLEM CORE ── */
+        .brand {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            z-index: 10;
+            padding: 8px 24px;
+            background: rgba(10, 22, 40, 0.25);
+            border-radius: 14px;
+            border: 1px solid rgba(0, 255, 163, 0.08);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .brand:hover {
+            border-color: rgba(0, 255, 163, 0.35);
+            background: rgba(10, 22, 40, 0.65);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65), 0 0 30px rgba(0, 255, 163, 0.12);
+            transform: translate(-50%, -50%) scale(1.02);
+        }
+
+        .brand::before, .brand::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-color: rgba(0, 255, 163, 0.2);
+            border-style: solid;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+        .brand::before { top: -2px; left: -2px; border-width: 1.5px 0 0 1.5px; }
+        .brand::after { bottom: -2px; right: -2px; border-width: 0 1.5px 1.5px 0; }
+
+        .brand:hover::before { top: -5px; left: -5px; border-color: var(--accent); }
+        .brand:hover::after { bottom: -5px; right: -5px; border-color: var(--accent); }
+
+        .brand-mark {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, rgba(5,10,18,0.95) 0%, rgba(8,15,28,0.3) 100%);
+            border: 1.5px solid var(--bio-border);
+            box-shadow: 0 0 20px rgba(0, 255, 163, 0.1), inset 0 0 15px rgba(0, 255, 163, 0.05);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .brand-mark::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border: 1px solid rgba(0, 255, 163, 0.08);
+            border-radius: 50%;
+            transition: all 0.4s ease;
+        }
+        .brand-mark::after {
+            content: '';
+            position: absolute;
+            inset: -9px;
+            border: 1px dashed rgba(0, 255, 163, 0.18);
+            border-radius: 50%;
+            animation: radarRotation 25s linear infinite;
+            transition: all 0.4s ease;
+        }
+
+        .brand:hover .brand-mark {
+            border-color: var(--bio);
+            box-shadow: 0 0 30px rgba(0, 255, 163, 0.45), inset 0 0 20px rgba(0, 255, 163, 0.25);
+        }
+        .brand:hover .brand-mark::before { inset: -6px; border-color: rgba(59, 255, 214, 0.35); }
+        .brand:hover .brand-mark::after { inset: -12px; border-color: var(--bio); opacity: 0.4; }
+
+        .brand-mark svg .layer-outer { transform-origin: center; animation: radarRotation 14s linear infinite; }
+        .brand-mark svg .layer-mid { transform-origin: center; animation: radarRotation 7s linear infinite reverse; }
+        .brand-mark svg .layer-core { transform-origin: center; animation: bioPulse 2.2s ease-in-out infinite; }
+
+        .brand-text-block {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .brand-wordmark {
+            font-weight: 300;
+            font-size: 1.65rem;
+            color: #ffffff;
+            letter-spacing: 0.06em;
+            line-height: 1;
+            text-transform: uppercase;
+            position: relative;
+            display: flex;
+            align-items: center;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .brand-wordmark::before,
+        .brand-wordmark::after {
+            font-family: monospace;
+            font-weight: 300;
+            font-size: 1.8rem;
+            color: var(--bio-border);
+            opacity: 0.5;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+        .brand-wordmark::before { content: '<'; margin-right: 6px; }
+        .brand-wordmark::after { content: '>'; margin-left: 6px; }
+
+        .brand-wordmark span { 
+            font-weight: 900;
+            background: linear-gradient(90deg, #00ffa3 0%, #3bffd6 30%, #ffffff 50%, #3bffd6 70%, #00ffa3 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: textScanline 3.5s linear infinite;
+            padding-left: 1px;
+            text-shadow: 0 0 20px rgba(0, 255, 163, 0.15);
+        }
+
+        .brand:hover .brand-wordmark { letter-spacing: 0.15em; }
+
+        @keyframes radarRotation { to { transform: rotate(360deg); } }
+        @keyframes bioPulse {
+            0%, 100% { transform: scale(1); opacity: 0.75; filter: drop-shadow(0 0 2px var(--bio-dim)); }
+            50% { transform: scale(1.12); opacity: 1; filter: drop-shadow(0 0 8px var(--bio)); }
+        }
+        @keyframes textScanline { to { background-position: 200% center; } }
+
+        /* Right controls */
+        .topbar-right { display: flex; align-items: center; gap: 12px; z-index: 2; }
+
+        .sys-badge {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: var(--bio);
+            background: var(--bio-glow);
+            border: 1px solid var(--bio-border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            letter-spacing: 0.06em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sys-badge::before {
+            content: '';
+            width: 6px; height: 6px;
+            background: var(--bio);
+            border-radius: 50%;
+            animation: blink 1.8s ease-in-out infinite;
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+        .theme-btn {
+            width: 42px; height: 42px;
+            border-radius: 10px;
+            border: 1px solid var(--bio-border);
+            background: var(--bio-glow);
+            color: var(--bio);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.25s;
+        }
+        .theme-btn:hover { transform: rotate(20deg) scale(1.1); border-color: var(--bio); }
+
+        /* ── MAIN LAYOUT ── */
+        .main-grid {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 40px 28px 60px;
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 28px;
+            align-items: start;
+        }
+
+        .sidebar-wrapper {
+            position: sticky;
+            top: 100px;
+            max-height: calc(100vh - 120px); 
+            overflow-y: auto; 
+            padding-bottom: 20px; 
+            scrollbar-width: none; 
+            -ms-overflow-style: none; 
+        }
+        .sidebar-wrapper::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ── PANEL / CARD ── */
+        .panel {
+            background: var(--glass);
+            border: 1px solid var(--bio-border);
+            border-radius: 20px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+            transition: background 0.4s ease;
+        }
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--bio), transparent);
+            opacity: 0.5;
+        }
+
+        .panel-head { padding: 22px 26px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
+        .panel-head-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            background: var(--bio-glow);
+            border: 1px solid var(--bio-border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--bio); font-size: 1rem;
+        }
+
+        .panel-title { font-weight: bold; font-size: 1.05rem; color: var(--text); }
+        .panel-subtitle { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+        .panel-body { padding: 24px 26px; }
+
+        /* ── FORM ELEMENTS ── */
+        .field-label { font-size: 0.75rem; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; margin-top: 16px; }
+        .field-label:first-child { margin-top: 0; }
+        .field-label::before { content: '//'; color: var(--bio); opacity: 0.6; }
+
+        .bio-select, .bio-input {
+            width: 100%;
+            background-color: var(--surface) !important;
+            border: 1px solid var(--bio-border);
+            border-radius: 12px;
+            color: var(--text) !important;
+            font-family: Arial, sans-serif;
+            font-size: 0.95rem;
+            padding: 14px 16px;
+            outline: none;
+            transition: all 0.25s;
+            box-sizing: border-box;
+        }
+        .bio-select {
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+        .bio-select:focus, .bio-input:focus { border-color: var(--bio); box-shadow: 0 0 0 3px rgba(0, 255, 163, 0.1); }
+        .bio-select option { background-color: var(--surface) !important; color: var(--text) !important; font-weight: 500; }
+
+        body.light-mode .bio-select, body.light-mode .bio-input { background-color: #f0faf6 !important; color: var(--text-l) !important; }
+        body.light-mode .bio-select option { background-color: #ffffff !important; color: var(--text-l) !important; }
+
+        .select-wrap { position: relative; }
+        .select-wrap::after { content: '⌄'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--bio); pointer-events: none; font-size: 1.2rem; }
+
+        /* ── SCAN BUTTON ── */
+        .scan-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #00ffa3 0%, #00c97a 100%);
+            color: #050a12;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            margin-top: 24px;
+        }
+        .scan-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.25) 100%); }
+        .scan-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,255,163,0.35); }
+        .scan-btn .btn-inner { display: flex; align-items: center; justify-content: center; gap: 8px; position: relative; z-index: 1; }
+
+        .bio-spinner {
+            width: 18px; height: 18px;
+            border: 3px solid rgba(5,10,18,0.2);
+            border-top-color: #050a12;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── AD SPACE PANEL ── */
+        .ad-panel {
+            margin-top: 24px;
+            background: var(--glass-light);
+            border: 1px dashed var(--bio-border);
+            border-radius: 20px;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            backdrop-filter: blur(5px);
+        }
+        .ad-panel i { font-size: 2rem; margin-bottom: 10px; color: var(--bio-border); display: block; }
+
+        /* ── RIGHT COLUMN HEADER ── */
+        .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+        .results-title { font-weight: bold; font-size: 1.8rem; color: var(--text); margin: 0;}
+        .results-title span { color: var(--bio); }
+        .record-count { font-size: 0.85rem; font-weight: bold; color: var(--muted); background: var(--bio-glow); border: 1px solid var(--bio-border); padding: 8px 16px; border-radius: 8px; letter-spacing: 0.06em;}
+
+        /* ── OPP CARD ── */
+        .opp-card {
+            background: var(--glass);
+            border: 1px solid var(--bio-border);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: card-in 0.5s ease both;
+        }
+        @keyframes card-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .opp-card:hover { transform: translateY(-6px); border-color: rgba(0,255,163,0.45); box-shadow: 0 24px 48px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,255,163,0.1); }
+        .opp-card::after { content: ''; position: absolute; top: -100%; left: 0; right: 0; height: 100%; background: linear-gradient(to bottom, transparent, rgba(0,255,163,0.03), transparent); transition: top 0.6s ease; pointer-events: none; }
+        .opp-card:hover::after { top: 100%; }
+        .opp-card::before { content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px; background: linear-gradient(90deg, transparent, var(--bio-border), transparent); }
+
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+        .card-index { font-size: 0.75rem; font-weight: bold; color: var(--muted); letter-spacing: 0.08em; margin-bottom: 8px; }
+        .card-title { font-weight: bold; font-size: 1.4rem; color: var(--text); line-height: 1.3; margin-bottom: 14px; }
+
+        /* EXPANDED META DATA GRID */
+        .meta-row { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+            gap: 12px; 
+            background: rgba(0, 255, 163, 0.03);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .meta-item { display: flex; align-items: flex-start; gap: 8px; font-size: 0.9rem; color: var(--text); }
+        .meta-item i { color: var(--bio); font-size: 1rem; margin-top: 2px; }
+        .meta-label { color: var(--muted); font-size: 0.7rem; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.05em; }
+
+        .card-desc { font-size: 1rem; line-height: 1.6; color: var(--text); margin: 20px 0; }
+
+        /* ── SCORE RING ── */
+        .score-ring-wrap { flex-shrink: 0; position: relative; width: 78px; height: 78px; }
+        .score-ring-wrap svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .ring-track { fill: none; stroke: rgba(0,255,163,0.08); stroke-width: 5; }
+        .ring-fill { fill: none; stroke: var(--bio); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 1.6s cubic-bezier(0.4,0,0.2,1); }
+        .score-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .score-num { font-size: 1.1rem; font-weight: bold; color: var(--bio); line-height: 1; }
+        .score-pct { font-size: 0.65rem; font-weight: bold; color: var(--muted); margin-top: 2px;}
+
+        /* ── SKILLS TAGS ── */
+        .tags-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+        .tag { font-size: 0.8rem; font-weight: bold; padding: 6px 14px; border-radius: 6px; background: rgba(0,255,163,0.04); border: 1px solid rgba(0,255,163,0.12); color: var(--muted); transition: all 0.2s; }
+        .tag:hover { border-color: var(--bio-border); color: var(--bio-dim); }
+
+        /* ── CREATIVE TERMINAL REDIRECT LINKS ── */
+        .cta-row { 
+            display: flex; 
+            gap: 16px; 
+            flex-wrap: wrap; 
+            align-items: center; 
+            justify-content: space-between; 
+            border-top: 1px solid var(--line); 
+            padding-top: 22px;
+        }
+        
+        .cta-group { 
+            display: flex; 
+            gap: 14px; 
+            align-items: center;
+        }
+
+        .btn-creative-gateway {
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 26px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-family: monospace;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+            background: rgba(0, 255, 163, 0.04);
+            border: 1px solid var(--bio-border);
+            color: var(--bio);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-creative-gateway span {
+            color: #ffffff;
+            font-weight: 400;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        /* Moving laser sweep line behind text */
+        .btn-creative-gateway::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(59, 255, 214, 0.15), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .btn-creative-gateway:hover {
+            color: #050a12;
+            background: var(--bio);
+            border-color: var(--bio);
+            box-shadow: 0 8px 24px rgba(0, 255, 163, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .btn-creative-gateway:hover span { color: #050a12; opacity: 0.9; font-weight: 700; }
+        .btn-creative-gateway:hover::before { left: 100%; }
+        .btn-creative-gateway i { font-size: 1rem; filter: drop-shadow(0 0 2px calc(currentColor)); }
+
+        .btn-search { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 42px;
+            height: 42px;
+            border-radius: 10px; 
+            border: 1px solid var(--line); 
+            background: rgba(255,255,255,0.02); 
+            color: var(--muted); 
+            text-decoration: none; 
+            transition: all 0.25s; 
+        }
+        .btn-search:hover { 
+            border-color: var(--bio-border); 
+            color: var(--bio); 
+            background: rgba(0, 255, 163, 0.04);
+            box-shadow: 0 0 10px rgba(0, 255, 163, 0.1);
+        }
+
+        /* ── CREATIVE UPLINK GATEWAY INTERSTITIAL SCREEN ── */
+        .gateway-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 10, 18, 0.96);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .gateway-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .gateway-terminal {
+            width: 520px;
+            background: var(--surface);
+            border: 1px solid var(--bio-border);
+            border-radius: 16px;
+            padding: 35px;
+            font-family: monospace;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(0,255,163,0.05);
+            position: relative;
+        }
+        .gateway-title {
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .gateway-title i { color: var(--bio); animation: spin 2s linear infinite; }
+        .gateway-logs {
+            height: 110px;
+            color: var(--muted);
+            font-size: 0.78rem;
+            line-height: 1.6;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+        .gateway-log-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            transform: translateY(5px);
+            animation: lineFadeIn 0.3s forwards;
+        }
+        .gateway-log-line span { color: var(--bio); }
+        .gateway-progress-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+        .gateway-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--bio-dim), var(--bio));
+            box-shadow: 0 0 10px var(--bio);
+            transition: width 1.8s cubic-bezier(0.1, 0.8, 0.2, 1);
+        }
+        @keyframes lineFadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        /* ── SKELETON ── */
+        #skeleton-loader { display: none; }
+        .skel-card { height: 260px; border-radius: 20px; background: linear-gradient(90deg, var(--glass) 25%, rgba(0,255,163,0.03) 50%, var(--glass) 75%); background-size: 200% 100%; animation: shimmer 1.6s infinite linear; border: 1px solid var(--bio-border); margin-bottom: 24px; }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+        /* ── FOOTER ── */
+        .bio-footer { border-top: 1px solid var(--bio-border); background: rgba(5,10,18,0.8); backdrop-filter: blur(10px); padding: 40px 0; position: relative; transition: background 0.4s ease; margin-top: 40px;}
+        body.light-mode .bio-footer { background: rgba(240, 250, 246, 0.9); }
+        .footer-inner { max-width: 1320px; margin: 0 auto; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+        .footer-label { font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+        .footer-name { font-weight: bold; font-size: 1.4rem; color: var(--bio); }
+        .footer-right { text-align: right; }
+        .footer-dept { font-size: 0.9rem; color: var(--text); font-weight: bold; }
+        .footer-uni { font-weight: bold; font-size: 1rem; color: var(--bio-dim); margin-top: 4px; }
+
+        .section-divider { display: flex; align-items: center; gap: 12px; margin: 12px 0 24px; }
+        .divider-line { flex: 1; height: 1px; background: var(--line); }
+        .divider-label { font-size: 0.75rem; font-weight: bold; color: var(--muted); text-transform: uppercase; }
+
+        /* ── MOBILE RESPONSIVENESS FIXES ── */
+        @media (max-width: 960px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .topbar-inner { padding: 0 16px; }
+            .sys-badge { display: none; }
+            .brand-wordmark { font-size: 1.35rem; }
+            .sidebar-wrapper { position: relative; top: 0; }
+        }
+        
+        @media (max-width: 768px) {
+            .topbar-inner { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                padding: 0 12px;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .nav-links { gap: 2px; order: 3; width: 100%; justify-content: center; padding-top: 5px; flex-wrap: wrap;}
+            .nav-links a { padding: 6px 8px; font-size: 0.7rem; }
+            
+            .brand { position: relative; left: auto; transform: none; order: 1; }
+            .brand::before, .brand::after { content: none !important; }
+            .brand-mark { width: 38px; height: 38px; }
+            .brand-mark svg { width: 18px; height: 18px; }
+            .brand-wordmark { font-size: 1.25rem; }
+            .brand-wordmark span { display: inline !important; } 
+            .brand-wordmark::after, .brand-wordmark::before { content: none !important; }
+        }
+    </style>
+</head>
+
+<body data-bs-theme="dark">
+    <div id="routingGateway" class="gateway-overlay">
+        <div class="gateway-terminal">
+            <div class="gateway-title"><i class="bi bi-gear-wide-connected"></i> INTELLIGENCE ROUTING ENGINE v2.5</div>
+            <div id="gatewayLogs" class="gateway-logs"></div>
+            <div class="gateway-progress-container">
+                <div id="gatewayProgress" class="gateway-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chinar-leaf-container">
+        <div class="chinar-leaf"></div>
+        <div class="chinar-leaf"></div>
+        <div class="chinar-leaf"></div>
+        <div class="chinar-leaf"></div>
+    </div>
+
+    <div class="parallax-bg"></div>
+    <div class="fog-layer"></div>
+    
+    <div class="chinar-leaf"></div>
+    <div class="chinar-leaf"></div>
+    <div class="chinar-leaf"></div>
+    <div class="chinar-leaf"></div>
+    <div class="chinar-leaf"></div>
+    
     <canvas id="particle-canvas"></canvas>
 
     <div class="content-wrap">
-      <nav class="topbar">
-        <div class="topbar-inner">
-          
-          <ul class="nav-links">
-            <li>
-              <a
-                href="/category/Job"
-                class="{% if active_cat == 'Job' %}active{% endif %}"
-                >Jobs</a
-              >
-            </li>
-            <li>
-              <a
-                href="/category/Masters"
-                class="{% if active_cat == 'Masters' %}active{% endif %}"
-                >Masters</a
-              >
-            </li>
-            <li>
-              <a
-                href="/category/PhD"
-                class="{% if active_cat == 'PhD' %}active{% endif %}"
-                >PhD</a
-              >
-            </li>
-          </ul>
+        <nav class="topbar">
+            <div class="topbar-inner">
+                
+                <ul class="nav-links">
+                    <li><a href="/category/Job" class="{% if active_cat == 'Job' %}active{% endif %}">Jobs</a></li>
+                    <li><a href="/category/Internship" class="{% if active_cat == 'Internship' %}active{% endif %}">Internships</a></li>
+                    <li><a href="/category/Masters" class="{% if active_cat == 'Masters' %}active{% endif %}">Masters</a></li>
+                    <li><a href="/category/PhD" class="{% if active_cat == 'PhD' %}active{% endif %}">PhD</a></li>
+                    <li><a href="/category/Workshop" class="{% if active_cat == 'Workshop' %}active{% endif %}">Workshops</a></li>
+                </ul>
 
-          <a class="brand" href="/">
-            <div class="brand-mark">
-              <i class="bi bi-bezier2"></i>
+                <a class="brand" href="/">
+                     <div class="brand-mark">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g class="layer-outer">
+                                <circle cx="12" cy="12" r="10" stroke="rgba(0, 255, 163, 0.25)" stroke-width="1" stroke-dasharray="3 4"/>
+                                <path d="M12 2V4M12 20V22M2 12H4M20 12H22" stroke="rgba(0, 255, 163, 0.4)" stroke-width="1" stroke-linecap="round"/>
+                            </g>
+                            <g class="layer-mid">
+                                <circle cx="12" cy="12" r="6.5" stroke="var(--bio-dim)" stroke-width="1.2" stroke-dasharray="10 3 2 3"/>
+                            </g>
+                            <g class="layer-core">
+                                <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                                <path d="M12 9.5C10.6 9.5 9.5 10.6 9.5 12C9.5 13.4 10.6 14.5 12 14.5" stroke="#ffffff" stroke-width="0.85"/>
+                            </g>
+                        </svg>
+                     </div>
+                     <div class="brand-text-block">
+                         <div class="brand-wordmark">Bio<span>Path</span></div>
+                     </div>
+                 </a>
+
+                <div class="topbar-right">
+                    <div class="sys-badge">SYS ONLINE</div>
+                    <button class="theme-btn" onclick="toggleTheme()" title="Toggle Mode" id="theme-btn" aria-label="Toggle theme">
+                        <i class="bi bi-moon-stars-fill" id="theme-icon"></i>
+                    </button>
+                </div>
             </div>
-            <div class="brand-wordmark">Bio<span>Path</span></div>
-          </a>
+        </nav>
 
-          <div class="topbar-right">
-            <div class="sys-badge">SYS ONLINE</div>
-            <button
-              class="theme-btn"
-              onclick="toggleTheme()"
-              title="Toggle Mode"
-              id="theme-btn"
-              aria-label="Toggle theme"
-            >
-              <i class="bi bi-moon-stars-fill" id="theme-icon"></i>
-            </button>
-          </div>
-        </div>
-      </nav>
+        <div class="main-grid">
+            <div class="sidebar-wrapper">
+                <div class="panel">
+                    <div class="panel-head">
+                        <div class="panel-head-icon"><i class="bi bi-cpu-fill"></i></div>
+                        <div>
+                            <div class="panel-title">Intelligence Engine</div>
+                            <div class="panel-subtitle">Neural Match System v2.5</div>
+                        </div>
+                    </div>
 
-      <div class="main-grid">
-        <div>
-          <div class="panel">
-            <div class="panel-head">
-              <div class="panel-head-icon"><i class="bi bi-cpu-fill"></i></div>
-              <div>
-                <div class="panel-title">Intelligence Engine</div>
-                <div class="panel-subtitle">Neural Match System v2.4</div>
-              </div>
-            </div>
+                    <div class="panel-body">
+                        <form id="searchForm" action="/match" method="POST">
+                            <input type="hidden" name="current_category" value="{{ active_cat if active_cat else 'Job' }}">
 
-            <div class="panel-body">
-              <form id="searchForm" action="/match" method="POST">
-                <input
-                  type="hidden"
-                  name="current_category"
-                  value="{{ active_cat if active_cat else 'Job' }}"
-                />
+                            <div class="field-label">Primary Field</div>
+                            <div class="select-wrap">
+                                <select name="field" class="bio-select">
+                                    <option value="Agricultural Biotechnology" {% if user_field == 'Agricultural Biotechnology' %}selected{% endif %}>Agricultural Biotechnology</option>
+                                    <option value="Biochemical Engineering" {% if user_field == 'Biochemical Engineering' %}selected{% endif %}>Biochemical Engineering</option>
+                                    <option value="Bioinformatics" {% if user_field == 'Bioinformatics' %}selected{% endif %}>Bioinformatics</option>
+                                    <option value="Biomanufacturing" {% if user_field == 'Biomanufacturing' %}selected{% endif %}>Biomanufacturing</option>
+                                    <option value="Biomedical Engineering" {% if user_field == 'Biomedical Engineering' %}selected{% endif %}>Biomedical Engineering</option>
+                                    <option value="Biophysics" {% if user_field == 'Biophysics' %}selected{% endif %}>Biophysics</option>
+                                    <option value="Clinical Research" {% if user_field == 'Clinical Research' %}selected{% endif %}>Clinical Research</option>
+                                    <option value="Computational Biology" {% if user_field == 'Computational Biology' %}selected{% endif %}>Computational Biology</option>
+                                    <option value="Environmental Biotechnology" {% if user_field == 'Environmental Biotechnology' %}selected{% endif %}>Environmental Biotechnology</option>
+                                    <option value="Genetics" {% if user_field == 'Genetics' %}selected{% endif %}>Genetics</option>
+                                    <option value="Immunology" {% if user_field == 'Immunology' %}selected{% endif %}>Immunology</option>
+                                    <option value="Industrial Biotechnology" {% if user_field == 'Industrial Biotechnology' %}selected{% endif %}>Industrial Biotechnology</option>
+                                    <option value="Marine Biotechnology" {% if user_field == 'Marine Biotechnology' %}selected{% endif %}>Marine Biotechnology</option>
+                                    <option value="Microbiology" {% if user_field == 'Microbiology' %}selected{% endif %}>Microbiology</option>
+                                    <option value="Molecular Biology" {% if user_field == 'Molecular Biology' %}selected{% endif %}>Molecular Biology</option>
+                                    <option value="Neurobiology" {% if user_field == 'Neurobiology' %}selected{% endif %}>Neurobiology</option>
+                                    <option value="Pharmacogenomics" {% if user_field == 'Pharmacogenomics' %}selected{% endif %}>Pharmacogenomics</option>
+                                    <option value="Plant Sciences" {% if user_field == 'Plant Sciences' %}selected{% endif %}>Plant Sciences</option>
+                                    <option value="Stem Cell Research" {% if user_field == 'Stem Cell Research' %}selected{% endif %}>Stem Cell</option>
+                                    <option value="Synthetic Biology" {% if user_field == 'Synthetic Biology' %}selected{% endif %}>Synthetic Biology</option>
+                                </select>
+                            </div>
 
-                <div class="mb-4">
-                  <div class="field-label">Primary Field</div>
-                  <div class="select-wrap">
-                    <select
-                      name="field"
-                      class="bio-select"
-                      aria-label="Primary Field"
-                    >
-                      <option value="Agricultural Biotechnology">
-                        Agricultural Biotechnology
-                      </option>
-                      <option value="Biochemical Engineering">
-                        Biochemical Engineering
-                      </option>
-                      <option value="Bioinformatics">Bioinformatics</option>
-                      <option value="Biomanufacturing">
-                        Biomanufacturing & Bioprocessing
-                      </option>
-                      <option value="Biomedical Engineering">
-                        Biomedical Engineering
-                      </option>
-                      <option value="Biophysics">
-                        Biophysics & Structural Biology
-                      </option>
-                      <option value="Clinical Research">
-                        Clinical Research & Trials
-                      </option>
-                      <option value="Computational Biology">
-                        Computational Biology
-                      </option>
-                      <option value="Environmental Biotechnology">
-                        Environmental Biotechnology
-                      </option>
-                      <option value="Genetics">Genetics & Genomics</option>
-                      <option value="Immunology">Immunology & Virology</option>
-                      <option value="Industrial Biotechnology">
-                        Industrial Biotechnology
-                      </option>
-                      <option value="Marine Biotechnology">
-                        Marine Biotechnology
-                      </option>
-                      <option value="Microbiology">Microbiology</option>
-                      <option value="Molecular Biology">
-                        Molecular Biology
-                      </option>
-                      <option value="Neurobiology">Neurobiology</option>
-                      <option value="Pharmacogenomics">
-                        Pharmacogenomics & Drug Discovery
-                      </option>
-                      <option value="Plant Sciences">Plant Sciences</option>
-                      <option value="Stem Cell Research">
-                        Stem Cell & Tissue Engineering
-                      </option>
-                      <option value="Synthetic Biology">
-                        Synthetic Biology
-                      </option>
-                    </select>
-                  </div>
+                            <div class="field-label">Location parameters</div>
+                            <input type="text" name="location" class="bio-input" placeholder="e.g. Bangalore, Remote" value="{{ user_location }}">
+
+                            <div class="field-label">Chronology Sort</div>
+                            <div class="select-wrap">
+                                <select name="time_sort" class="bio-select">
+                                    <option value="recent" {% if time_sort == 'recent' %}selected{% endif %}>Recently Uploaded</option>
+                                    <option value="expiring" {% if time_sort == 'expiring' %}selected{% endif %}>Expiring Soon</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="scan-btn" onclick="startScan()">
+                                <div class="btn-inner">
+                                    <i class="bi bi-lightning-charge-fill" id="btn-icon"></i>
+                                    <span id="btnText">Initiate Intelligence Match</span>
+                                    <div class="bio-spinner" id="btnSpinner"></div>
+                                </div>
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
-                <button type="submit" class="scan-btn" onclick="startScan()">
-                  <div class="btn-inner">
-                    <i class="bi bi-lightning-charge-fill" id="btn-icon"></i>
-                    <span id="btnText">Initiate Intelligence Match</span>
-                    <div class="bio-spinner" id="btnSpinner"></div>
-                  </div>
-                </button>
-              </form>
-            </div>
-          </div>
+                <div class="ad-panel">
+                    <div>
+                        <i class="bi bi-broadcast"></i>
+                        <br>[ AdSense Space Placeholder ]<br>
+                        <span>300 x 250</span>
+                    </div>
+                </div>
 
-          {% if suggestions %}
-          <div class="panel roadmap-panel">
-            <div class="panel-head">
-              <div class="panel-head-icon"><i class="bi bi-stars"></i></div>
-              <div>
-                <div class="panel-title">AI Roadmap Insights</div>
-                <div class="panel-subtitle">Skill Gap Analysis</div>
-              </div>
+                {% if suggestions %}
+                <div class="panel roadmap-panel">
+                    <div class="panel-head">
+                        <div class="panel-head-icon"><i class="bi bi-stars"></i></div>
+                        <div>
+                            <div class="panel-title">AI Roadmap Insights</div>
+                            <div class="panel-subtitle">Skill Gap Analysis</div>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        {% for sug in suggestions %}
+                        <div class="roadmap-item">
+                            <div class="roadmap-role">{{ sug.role }}</div>
+                            <div>
+                                {% for skill in sug.missing_skills %}
+                                <span class="skill-chip"><i class="bi bi-plus-circle"></i>{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
-            <div class="panel-body">
-              {% for sug in suggestions %}
-              <div class="roadmap-item">
-                <div class="roadmap-role">{{ sug.role }}</div>
+
+            <div>
+                <div class="results-header">
+                    <div class="results-title">
+                        {% if results %}Scan <span>Results</span>{% else %}Live <span>Opportunities</span>{% endif %}
+                    </div>
+                    <div class="record-count">
+                        <i class="bi bi-database-check" style="color: var(--bio); margin-right: 6px;"></i>
+                        {{ results|length if results else opportunities|length }} Records
+                    </div>
+                </div>
+
+                <div id="skeleton-loader">
+                    <div class="skel-card"></div>
+                    <div class="skel-card"></div>
+                    <div class="skel-card"></div>
+                </div>
+
+                <div id="content-payload">
+                    {% set items = results if results else opportunities %}
+                    {% for item in items %}
+                    {% set data = item.data if results else item %}
+                    {% set score = item.score if results else 0 %}
+
+                    <div class="opp-card" style="animation-delay: {{ loop.index0 * 0.07 }}s">
+                        <div class="card-top">
+                            <div style="flex: 1; min-width: 0;">
+                                <div class="card-index">// ENTRY {{ "%03d"|format(loop.index) }}</div>
+                                <div class="card-title">{{ data.title }}</div>
+                            </div>
+
+                            {% if score > 0 %}
+                            <div class="score-ring-wrap">
+                                <svg width="78" height="78" viewBox="0 0 78 78">
+                                    <circle class="ring-track" cx="39" cy="39" r="34"/>
+                                    <circle class="ring-fill" cx="39" cy="39" r="34"
+                                        stroke-dasharray="213.6"
+                                        stroke-dashoffset="{{ 213.6 - (213.6 * score / 100) }}"/>
+                                </svg>
+                                <div class="score-label">
+                                    <div class="score-num">{{ score }}</div>
+                                    <div class="score-pct">% MATCH</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="meta-row">
+                            <div class="meta-item">
+                                <i class="bi bi-tag-fill"></i>
+                                <div>
+                                    <span class="meta-label">Category</span>
+                                    {{ data.category }}
+                                </div>
+                            </div>
+                            <div class="meta-item">
+                                <i class="bi bi-geo-alt-fill"></i>
+                                <div>
+                                    <span class="meta-label">Location</span>
+                                    {{ data.location }}
+                                </div>
+                            </div>
+                            <div class="meta-item">
+                                <i class="bi bi-cloud-arrow-up-fill"></i>
+                                <div>
+                                    <span class="meta-label">Uploaded</span>
+                                    {{ data.uploaded_date | default("Recent", true) }}
+                                </div>
+                            </div>
+                            <div class="meta-item">
+                                <i class="bi bi-calendar-x-fill"></i>
+                                <div>
+                                    <span class="meta-label">Deadline</span>
+                                    {{ data.deadline }}
+                                </div>
+                            </div>
+                            <div class="meta-item">
+                                <i class="bi bi-journal-check"></i>
+                                <div>
+                                    <span class="meta-label">Required Exams</span>
+                                    {{ data.exams_required | default("None specified", true) }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-divider">
+                            <div class="divider-line"></div>
+                            <div class="divider-label">Intelligence Summary</div>
+                            <div class="divider-line"></div>
+                        </div>
+
+                        <div class="card-desc">
+                            {{ data.description }}
+                            
+                            {% if data.fellowship_details %}
+                            <div style="margin-top: 12px; padding: 12px; background: rgba(0, 255, 163, 0.05); border-left: 2px solid var(--bio); border-radius: 4px;">
+                                <strong style="color: var(--text);">Fellowship/Grant Details:</strong><br>
+                                <span style="color: var(--bio-dim);">{{ data.fellowship_details }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="section-divider">
+                            <div class="divider-line"></div>
+                            <div class="divider-label">Required Skills</div>
+                            <div class="divider-line"></div>
+                        </div>
+
+                        <div class="tags-row">
+                            {% for skill in data.skills_required.split(',') %}
+                            <span class="tag">{{ skill.strip() }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="cta-row">
+                            <span style="font-size: 0.75rem; font-weight: bold; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">
+                                // System Routing Gateway
+                            </span>
+                            
+                            <div class="cta-group">
+                                {% if data.link and 'http' in data.link and 'adzuna' not in data.link.lower() and 'indeed' not in data.link.lower() %}
+                                    <button onclick="executeSecureRouting('{{ data.link }}', '{{ data.title | escape }}', false)" class="btn-creative-gateway">
+                                        <i class="bi bi-terminal-fill"></i> <span>click here on the link to apply</span>
+                                    </button>
+                                {% else %}
+                                    <button onclick="executeSecureRouting('https://www.google.com/search?q={{ (data.title ~ " official portal application direct " ~ data.location)|urlencode }}&btnI=I', '{{ data.title | escape }}', true)" class="btn-creative-gateway" style="border-color: rgba(59, 255, 214, 0.25);">
+                                        <i class="bi bi-box-arrow-up-right"></i> <span>click here to auto-route to application</span>
+                                    </button>
+                                {% endif %}
+                                
+                                <a href="https://www.google.com/search?q={{ (data.title ~ " " ~ data.location)|urlencode }}" target="_blank" rel="noopener noreferrer" class="btn-search" title="Search on Google">
+    <i class="bi bi-google"></i>
+</a>
+                                    <i class="bi bi-hash"></i>
+                                </a>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <footer class="bio-footer">
+            <div class="footer-inner">
                 <div>
-                  {% for skill in sug.missing_skills %}
-                  <span class="skill-chip"
-                    ><i class="bi bi-plus-circle"></i>{{ skill }}</span
-                  >
-                  {% endfor %}
+                    <div class="footer-label">Neural Architect</div>
+                    <div class="footer-name">Mohammad Khalid Qadri</div>
                 </div>
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-          {% endif %}
-        </div>
-
-        <div>
-          <div class="results-header">
-            <div class="results-title">
-              {% if results %}Scan <span>Results</span>{% else %}Live
-              <span>Opportunities</span>{% endif %}
-            </div>
-            <div class="record-count">
-              <i
-                class="bi bi-database-check"
-                style="color: var(--bio); margin-right: 6px"
-              ></i>
-              {{ results|length if results else opportunities|length }} Records
-            </div>
-          </div>
-
-          <div id="skeleton-loader">
-            <div class="skel-card"></div>
-            <div class="skel-card"></div>
-            <div class="skel-card"></div>
-          </div>
-
-          <div id="content-payload">
-            {% set items = results if results else opportunities %} {% for item
-            in items %} {% set data = item.data if results else item %} {% set
-            score = item.score if results else 0 %}
-
-            <div
-              class="opp-card"
-              style="animation-delay: {{ "%.2f"|format(loop.index0 * 0.07) }}s;"
-            >
-              <div class="card-top">
-                <div style="flex: 1; min-width: 0">
-                  <div class="card-index">
-                    // ENTRY {{ "%03d"|format(loop.index) }}
-                  </div>
-                  <div class="card-title">{{ data.title }}</div>
-                  <div class="meta-row">
-                    <span class="meta-item"
-                      ><i class="bi bi-tag-fill"></i>{{ data.category }}</span
-                    >
-                    <span class="meta-item"
-                      ><i class="bi bi-geo-alt-fill"></i>{{ data.location
-                      }}</span
-                    >
-                    <span class="meta-item"
-                      ><i class="bi bi-calendar-check-fill"></i>{{ data.deadline
-                      }}</span
-                    >
-                  </div>
+                <div class="footer-right">
+                    <div class="footer-dept">Department of Biotechnology, Batch 2023</div>
+                    <div class="footer-uni">Central University of Kashmir</div>
                 </div>
-
-                {% if score > 0 %}
-                <div class="score-ring-wrap">
-                  <svg width="78" height="78" viewBox="0 0 78 78">
-                    <circle class="ring-track" cx="39" cy="39" r="34" />
-                    <circle
-                      class="ring-fill"
-                      cx="39"
-                      cy="39"
-                      r="34"
-                      stroke-dasharray="213.6"
-                      stroke-dashoffset="{{ 213.6 - (213.6 * score / 100) }}"
-                    />
-                  </svg>
-                  <div class="score-label">
-                    <div class="score-num">{{ score }}</div>
-                    <div class="score-pct">% MATCH</div>
-                  </div>
-                </div>
-                {% endif %}
-              </div>
-
-              <div class="section-divider">
-                <div class="divider-line"></div>
-                <div class="divider-label">Description</div>
-                <div class="divider-line"></div>
-              </div>
-
-              <p class="card-desc">{{ data.description[:280] }}…</p>
-
-              <div class="section-divider">
-                <div class="divider-line"></div>
-                <div class="divider-label">Required Skills</div>
-                <div class="divider-line"></div>
-              </div>
-
-              <div class="tags-row">
-                {% for skill in data.skills_required.split(',') %}
-                <span class="tag">{{ skill.strip() }}</span>
-                {% endfor %}
-              </div>
-
-              <div class="cta-row">
-                {% if data.link and 'http' in data.link %}
-                <a href="{{ data.link }}" target="_blank" rel="noopener noreferrer" class="btn-view">
-                  <i class="bi bi-box-arrow-up-right"></i> Official Portal
-                </a>
-                {% endif %}
-
-                <a
-                  href="https://www.google.com/search?q={{ (data.title ~ ' ' ~ data.location)|urlencode }}&btnI=I"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="btn-direct"
-                >
-                  <i class="bi bi-globe2"></i> Direct Website
-                </a>
-
-                <a
-                  href="https://www.google.com/search?q={{ (data.title ~ ' ' ~ data.location)|urlencode }}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="btn-search"
-                  title="Google Search"
-                >
-                  <i class="bi bi-google"></i>
-                </a>
-              </div>
             </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-
-      <footer class="bio-footer">
-        <div class="footer-inner">
-          <div>
-            <div class="footer-label">Neural Architect</div>
-            <div class="footer-name">Mohammad Khalid Qadri</div>
-          </div>
-          <div class="footer-right">
-            <div class="footer-dept">
-              Department of Biotechnology, Batch 2023
-            </div>
-            <div class="footer-uni">Central University of Kashmir</div>
-          </div>
-        </div>
-      </footer>
+        </footer>
     </div>
 
     <script>
-      // ── Particle Canvas ──
-      const canvas = document.getElementById("particle-canvas");
-      const ctx = canvas.getContext("2d");
-      let particles = [];
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
 
-      function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
-
-      function createParticle() {
-        return {
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          vx: (Math.random() - 0.5) * 0.4,
-          vy: (Math.random() - 0.5) * 0.4,
-          r: Math.random() * 1.8 + 0.5,
-          a: Math.random() * 0.6 + 0.1,
-        };
-      }
-
-      function initParticles() {
-        particles = Array.from({ length: 80 }, createParticle);
-      }
-
-      function drawParticles() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (let i = 0; i < particles.length; i++) {
-          const p = particles[i];
-          p.x += p.vx;
-          p.y += p.vy;
-          if (p.x < 0) p.x = canvas.width;
-          if (p.x > canvas.width) p.x = 0;
-          if (p.y < 0) p.y = canvas.height;
-          if (p.y > canvas.height) p.y = 0;
-
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(0, 255, 163, ${p.a})`;
-          ctx.fill();
-
-          // Connect nearby particles
-          for (let j = i + 1; j < particles.length; j++) {
-            const q = particles[j];
-            const dx = p.x - q.x,
-              dy = p.y - q.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 90) {
-              ctx.beginPath();
-              ctx.moveTo(p.x, p.y);
-              ctx.lineTo(q.x, q.y);
-              ctx.strokeStyle = `rgba(0, 255, 163, ${0.07 * (1 - dist / 90)})`;
-              ctx.lineWidth = 0.6;
-              ctx.stroke();
-            }
-          }
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
-        requestAnimationFrame(drawParticles);
-      }
 
-      resize();
-      initParticles();
-      drawParticles();
-      window.addEventListener("resize", () => {
+        function createParticle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                r: Math.random() * 1.8 + 0.5,
+                a: Math.random() * 0.6 + 0.1,
+            };
+        }
+
+        function initParticles() {
+            particles = Array.from({ length: 80 }, createParticle);
+        }
+
+        function drawParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = canvas.width;
+                if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height;
+                if (p.y > canvas.height) p.y = 0;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 255, 163, ${p.a})`;
+                ctx.fill();
+
+                for (let j = i + 1; j < particles.length; j++) {
+                    const q = particles[j];
+                    const dx = p.x - q.x, dy = p.y - q.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 90) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(q.x, q.y);
+                        ctx.strokeStyle = `rgba(0, 255, 163, ${0.07 * (1 - dist / 90)})`;
+                        ctx.lineWidth = 0.6;
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(drawParticles);
+        }
+
         resize();
         initParticles();
-      });
+        drawParticles();
+        window.addEventListener('resize', () => { resize(); initParticles(); });
 
-      // ── Theme Toggle ──
-      document.addEventListener("DOMContentLoaded", () => {
-        const saved = localStorage.getItem("biopathTheme") || "dark";
-        if (saved === "light") {
-          document.body.classList.add("light-mode");
-          document.getElementById("theme-icon").className = "bi bi-sun-fill";
+        document.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('biopathTheme') || 'dark';
+            if (saved === 'light') {
+                document.body.classList.add('light-mode');
+                document.getElementById('theme-icon').className = 'bi bi-sun-fill';
+            }
+        });
+
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('theme-icon');
+            if (body.classList.contains('light-mode')) {
+                body.classList.remove('light-mode');
+                icon.className = 'bi bi-moon-stars-fill';
+                localStorage.setItem('biopathTheme', 'dark');
+            } else {
+                body.classList.add('light-mode');
+                icon.className = 'bi bi-sun-fill';
+                localStorage.setItem('biopathTheme', 'light');
+            }
         }
-      });
 
-      function toggleTheme() {
-        const body = document.body;
-        const icon = document.getElementById("theme-icon");
-        if (body.classList.contains("light-mode")) {
-          // Switch to Dark
-          body.classList.remove("light-mode");
-          icon.className = "bi bi-moon-stars-fill";
-          localStorage.setItem("biopathTheme", "dark");
-        } else {
-          // Switch to Light
-          body.classList.add("light-mode");
-          icon.className = "bi bi-sun-fill";
-          localStorage.setItem("biopathTheme", "light");
+        function startScan() {
+            document.getElementById('content-payload').style.display = 'none';
+            document.getElementById('skeleton-loader').style.display = 'block';
+            document.getElementById('btnText').innerText = 'Neural Scanning...';
+            document.getElementById('btnSpinner').style.display = 'block';
+            document.getElementById('btn-icon').style.display = 'none';
         }
-      }
 
-      // ── Scan Trigger ──
-      function startScan() {
-        document.getElementById("content-payload").style.display = "none";
-        document.getElementById("skeleton-loader").style.display = "block";
-        document.getElementById("btnText").innerText = "Neural Scanning...";
-        document.getElementById("btnSpinner").style.display = "block";
-        document.getElementById("btn-icon").style.display = "none";
-      }
+        /* ── SCI-FI ROUTING INTERSTITIAL CONTROLLER ── */
+        function executeSecureRouting(targetUrl, itemTitle, isSearchBypass) {
+            const overlay = document.getElementById('routingGateway');
+            const logsContainer = document.getElementById('gatewayLogs');
+            const progressBar = document.getElementById('gatewayProgress');
+            
+            // Clear prior sequences
+            logsContainer.innerHTML = '';
+            progressBar.style.width = '0%';
+            overlay.classList.add('active');
+
+            const sequences = [
+                { text: `INITIALIZING SECURE UPLINK STREAM...`, delay: 100 },
+                { text: `REQUEST TARGET: [${itemTitle.toUpperCase()}]`, delay: 350 },
+                { text: isSearchBypass ? `WARNING: INTERCEPTING SCRAMBLED AGGREGATOR SIGNALS...` : `VERIFYING SOURCE CERTIFICATES...`, delay: 700 },
+                { text: isSearchBypass ? `INJECTING SHIELD PARAMETERS // ENFORCING DIRECT DECRYPTION...` : `PROXY SHIELD ESTABLISHED. STATUS: SECURE`, delay: 1100 },
+                { text: `ROUTING SUCCESSFUL. OPENING VIRTUAL PORTAL LINK NOW...`, delay: 1550 }
+            ];
+
+            // Print sequential logs logs smoothly
+            sequences.forEach(seq => {
+                setTimeout(() => {
+                    const line = document.createElement('div');
+                    line.className = 'gateway-log-line';
+                    line.innerHTML = `<span>&gt;</span> ${seq.text}`;
+                    logsContainer.appendChild(line);
+                    logsContainer.scrollTop = logsContainer.scrollHeight;
+                }, seq.delay);
+            });
+
+            // Fire progress animation bar
+            setTimeout(() => { progressBar.style.width = '100%'; }, 50);
+
+            // Execute asynchronous routing launch trigger
+            setTimeout(() => {
+                window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                setTimeout(() => { overlay.classList.remove('active'); }, 500);
+            }, 1950);
+        }
     </script>
-  </body>
+</body>
 </html>
