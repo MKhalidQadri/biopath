@@ -14,7 +14,7 @@
 
         html, body {
             max-width: 100vw;
-            overflow-x: hidden; /* Hard-lock the horizontal scroll */
+            overflow-x: hidden; 
         }
 
         /* =====================================================
@@ -50,7 +50,8 @@
             background-color: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            transition: background-color 0.4s ease, color 0.4s ease;
+            min-height: 100dvh; 
+            transition: background-color 0.3s ease, color 0.3s ease;
             margin: 0;
             padding: 0;
         }
@@ -74,6 +75,8 @@
             pointer-events: none;
             z-index: 0;
             opacity: 0.35;
+            /* GPU Hint */
+            transform: translateZ(0); 
         }
 
         body.light-mode #particle-canvas { opacity: 0.12; }
@@ -89,7 +92,7 @@
             background-size: 40px 40px;
             pointer-events: none;
             z-index: 0;
-            transition: opacity 0.5s;
+            transition: opacity 0.3s;
         }
         body.light-mode::before { opacity: 0.4; }
 
@@ -102,20 +105,20 @@
             background-position: center center;
             background-repeat: no-repeat;
             background-size: 50%;
-            opacity: 0.3; 
+            opacity: 0.25; 
             z-index: 0;
             pointer-events: none;
             filter: grayscale(100%) invert(1) brightness(1.2) sepia(1) saturate(5) hue-rotate(90deg);
-            transition: opacity 0.4s ease;
+            transition: filter 0.3s ease, opacity 0.3s ease;
         }
 
         body.light-mode::after {
-            opacity: 0.8;
-            mix-blend-mode: multiply;
-            filter: grayscale(100%) sepia(1) hue-rotate(90deg) saturate(5) contrast(1.5);
+            opacity: 0.15;
+            /* Removed heavy mix-blend-mode for massive performance gain */
+            filter: grayscale(100%) sepia(1) hue-rotate(90deg) saturate(3) brightness(0.8);
         }
 
-        /* ── FLOATING CHINAR LEAVES ── */
+        /* ── FLOATING CHINAR LEAVES (GPU OPTIMIZED) ── */
         .chinar-leaf-container {
             position: fixed;
             top: 0;
@@ -135,9 +138,17 @@
             background-image: url('/static/img/chinar-leaf-user.png');
             background-size: contain;
             background-repeat: no-repeat;
-            opacity: 0.3;
+            opacity: 0.25;
             animation: fall linear infinite;
             filter: grayscale(100%) invert(1) brightness(1.2) sepia(1) saturate(5) hue-rotate(90deg);
+            will-change: transform;
+            transition: filter 0.3s ease, opacity 0.3s ease;
+        }
+
+        body.light-mode .chinar-leaf { 
+            opacity: 0.15; 
+            /* Removed mix-blend-mode to stop GPU thrashing */
+            filter: grayscale(100%) sepia(1) hue-rotate(90deg) saturate(3) brightness(0.8);
         }
 
         .chinar-leaf:nth-child(1) { left: 10%; animation-duration: 25s; animation-delay: 0s; width: 120px; height: 120px; }
@@ -146,16 +157,10 @@
         .chinar-leaf:nth-child(4) { left: 85%; animation-duration: 40s; animation-delay: -15s; width: 200px; height: 200px; }
 
         @keyframes fall {
-            0% { transform: translateY(-20vh) rotate(0deg) translateX(0); opacity: 0; }
+            0% { transform: translate3d(0, -20vh, 0) rotate(0deg); opacity: 0; }
             10% { opacity: 0.02; }
             90% { opacity: 0.02; }
-            100% { transform: translateY(120vh) rotate(180deg) translateX(50px); opacity: 0; }
-        }
-
-        body.light-mode .chinar-leaf { 
-            opacity: 0.9; 
-            mix-blend-mode: multiply;
-            filter: grayscale(100%) sepia(1) hue-rotate(90deg) saturate(5) contrast(1.5);
+            100% { transform: translate3d(50px, 120vh, 0) rotate(180deg); opacity: 0; }
         }
 
         .content-wrap { position: relative; z-index: 1; width: 100%; }
@@ -172,8 +177,10 @@
             height: 75px;
             display: flex;
             align-items: center;
-            transition: background 0.4s ease;
+            transition: background 0.3s ease;
             width: 100%;
+            /* Force onto GPU layer to stop repaint lag */
+            backface-visibility: hidden; 
         }
         body.light-mode .topbar { background: rgba(240, 250, 246, 0.9); }
 
@@ -337,6 +344,8 @@
             text-shadow: 0 0 20px rgba(0, 255, 163, 0.15);
         }
 
+        .brand:hover .brand-wordmark { letter-spacing: 0.15em; }
+
         @keyframes radarRotation { to { transform: rotate(360deg); } }
         @keyframes bioPulse {
             0%, 100% { transform: scale(1); opacity: 0.75; filter: drop-shadow(0 0 2px var(--bio-dim)); }
@@ -346,28 +355,6 @@
 
         /* Right controls */
         .topbar-right { display: flex; align-items: center; gap: 12px; z-index: 2; }
-
-        .sys-badge {
-            font-size: 0.7rem;
-            font-weight: bold;
-            color: var(--bio);
-            background: var(--bio-glow);
-            border: 1px solid var(--bio-border);
-            padding: 6px 12px;
-            border-radius: 6px;
-            letter-spacing: 0.06em;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .sys-badge::before {
-            content: '';
-            width: 6px; height: 6px;
-            background: var(--bio);
-            border-radius: 50%;
-            animation: blink 1.8s ease-in-out infinite;
-        }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
         .theme-btn {
             width: 42px; height: 42px;
@@ -381,6 +368,8 @@
             justify-content: center;
             font-size: 1.1rem;
             transition: all 0.25s;
+            -webkit-appearance: none;
+            appearance: none;
         }
         .theme-btn:hover { transform: rotate(20deg) scale(1.1); border-color: var(--bio); }
 
@@ -423,8 +412,9 @@
             -webkit-backdrop-filter: blur(12px);
             position: relative;
             overflow: hidden;
-            transition: background 0.4s ease;
+            transition: background 0.3s ease;
             width: 100%;
+            backface-visibility: hidden; /* Fix GPU Repaint lag */
         }
         .panel::before {
             content: '';
@@ -465,6 +455,8 @@
             padding: 14px 16px;
             outline: none;
             transition: all 0.25s;
+            -webkit-appearance: none;
+            appearance: none;
         }
         .bio-select:focus, .bio-input:focus { border-color: var(--bio); box-shadow: 0 0 0 3px rgba(0, 255, 163, 0.1); }
         .bio-select option { background-color: var(--surface) !important; color: var(--text) !important; font-weight: 500; }
@@ -490,6 +482,7 @@
             overflow: hidden;
             transition: all 0.3s ease;
             margin-top: 24px;
+            -webkit-appearance: none;
         }
         .scan-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.25) 100%); }
         .scan-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,255,163,0.35); }
@@ -505,7 +498,7 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── STEALTH PROMO SPACE (Bypasses Adblockers) ── */
+        /* ── STEALTH PROMO SPACE ── */
         .promo-module {
             margin-top: 24px;
             background: var(--glass-light);
@@ -540,10 +533,11 @@
             margin-bottom: 24px;
             position: relative;
             overflow: hidden;
-            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: background 0.3s ease, border-color 0.3s ease;
             animation: card-in 0.5s ease both;
             width: 100%;
-            overflow-wrap: break-word; /* BREAK LONG WORDS */
+            overflow-wrap: break-word; 
+            backface-visibility: hidden; /* Fix GPU Repaint lag */
         }
         @keyframes card-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         .opp-card:hover { transform: translateY(-6px); border-color: rgba(0,255,163,0.45); box-shadow: 0 24px 48px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,255,163,0.1); }
@@ -582,54 +576,26 @@
         .score-num { font-size: 1.1rem; font-weight: bold; color: var(--bio); line-height: 1; }
         .score-pct { font-size: 0.65rem; font-weight: bold; color: var(--muted); margin-top: 2px;}
 
-        /* ── SKILLS TAGS ── */
-        .tags-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-        .tag { font-size: 0.8rem; font-weight: bold; padding: 6px 14px; border-radius: 6px; background: rgba(0,255,163,0.04); border: 1px solid rgba(0,255,163,0.12); color: var(--muted); transition: all 0.2s; }
-        
         /* ── CREATIVE TERMINAL REDIRECT LINKS ── */
         .cta-row { 
-            display: flex; 
-            gap: 16px; 
-            flex-wrap: wrap; 
-            align-items: center; 
-            justify-content: space-between; 
-            border-top: 1px solid var(--line); 
-            padding-top: 22px;
+            display: flex; gap: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between; 
+            border-top: 1px solid var(--line); padding-top: 22px;
         }
         
-        .cta-group { 
-            display: flex; 
-            gap: 14px; 
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .cta-group { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
 
         .btn-creative-gateway {
-            display: inline-flex;
-            align-items: center;
-            gap: 14px;
-            padding: 12px 26px;
-            border-radius: 10px;
-            text-decoration: none;
-            font-family: monospace;
-            font-size: 0.82rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            position: relative;
-            overflow: hidden;
-            background: rgba(0, 255, 163, 0.04);
-            border: 1px solid var(--bio-border);
-            color: var(--bio);
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex; align-items: center; gap: 14px; padding: 12px 26px; border-radius: 10px;
+            text-decoration: none; font-family: monospace; font-size: 0.82rem; font-weight: 700;
+            letter-spacing: 0.06em; text-transform: uppercase; position: relative; overflow: hidden;
+            background: rgba(0, 255, 163, 0.04); border: 1px solid var(--bio-border); color: var(--bio);
+            cursor: pointer; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); -webkit-appearance: none;
         }
 
         .btn-creative-gateway span { color: #ffffff; font-weight: 400; opacity: 0.7; white-space: normal; text-align: left; transition: opacity 0.3s;}
         .btn-creative-gateway::before {
             content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(59, 255, 214, 0.15), transparent);
-            transition: all 0.6s ease;
+            background: linear-gradient(90deg, transparent, rgba(59, 255, 214, 0.15), transparent); transition: all 0.6s ease;
         }
         .btn-creative-gateway:hover { color: #050a12; background: var(--bio); border-color: var(--bio); box-shadow: 0 8px 24px rgba(0, 255, 163, 0.35); transform: translateY(-2px); }
         .btn-creative-gateway:hover span { color: #050a12; opacity: 0.9; font-weight: 700; }
@@ -637,24 +603,15 @@
         .btn-creative-gateway i { font-size: 1rem; flex-shrink: 0; }
 
         /* 💥 OPTION 2: DARK BACKGROUND FOR LIGHT MODE LEGIBILITY 💥 */
-        body.light-mode .btn-creative-gateway {
-            background: #080f1c; 
-            border-color: rgba(0, 130, 80, 0.4);
-        }
-        body.light-mode .btn-creative-gateway span {
-            color: #ffffff; 
-        }
-        body.light-mode .btn-creative-gateway:hover {
-            background: var(--bio-dim);
-            border-color: var(--bio-dim);
-        }
-        body.light-mode .btn-creative-gateway:hover span {
-            color: #ffffff;
-        }
+        body.light-mode .btn-creative-gateway { background: #080f1c; border-color: rgba(0, 130, 80, 0.4); }
+        body.light-mode .btn-creative-gateway span { color: #ffffff; }
+        body.light-mode .btn-creative-gateway:hover { background: var(--bio-dim); border-color: var(--bio-dim); }
+        body.light-mode .btn-creative-gateway:hover span { color: #ffffff; }
 
         .btn-search { 
             display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px;
             border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,0.02); color: var(--muted); text-decoration: none; flex-shrink: 0;
+            -webkit-appearance: none;
         }
         .btn-search:hover { border-color: var(--bio-border); color: var(--bio); background: rgba(0, 255, 163, 0.04); box-shadow: 0 0 10px rgba(0, 255, 163, 0.1); }
 
@@ -683,7 +640,7 @@
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
         /* ── FOOTER ── */
-        .bio-footer { border-top: 1px solid var(--bio-border); background: rgba(5,10,18,0.8); backdrop-filter: blur(10px); padding: 40px 0; position: relative; transition: background 0.4s ease; margin-top: 40px;}
+        .bio-footer { border-top: 1px solid var(--bio-border); background: rgba(5,10,18,0.8); backdrop-filter: blur(10px); padding: 40px 0; position: relative; transition: background 0.3s ease; margin-top: 40px;}
         body.light-mode .bio-footer { background: rgba(240, 250, 246, 0.9); }
         .footer-inner { max-width: 1320px; margin: 0 auto; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
         .footer-label { font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
@@ -707,11 +664,8 @@
         @media (max-width: 768px) {
             .topbar { padding: 10px 0; height: auto; }
             .topbar-inner { 
-                display: flex; 
-                justify-content: space-between; 
-                align-items: center; 
-                padding: 0 16px;
-                flex-wrap: wrap;
+                display: flex; justify-content: space-between; align-items: center; 
+                padding: 0 16px; flex-wrap: wrap;
             }
             
             /* Ground the Logo */
@@ -754,7 +708,7 @@
             .cta-row { flex-direction: column; align-items: stretch; gap: 12px; width: 100%; }
             .cta-group { width: 100%; display: flex; gap: 8px; }
             .btn-creative-gateway { flex: 1; justify-content: center; padding: 12px; text-align: center; }
-            .btn-creative-gateway span { font-size: 0.75rem; text-align: center; }
+            .btn-creative-gateway span { font-size: 0.75rem; text-align: center; white-space: normal; line-height: 1.4;}
             .results-header { flex-direction: column; align-items: flex-start; gap: 12px; width: 100%; }
             
             .gateway-terminal { padding: 20px; width: 92vw; }
@@ -997,20 +951,6 @@
                                     {{ data.uploaded_date | default("Recent", true) }}
                                 </div>
                             </div>
-                            <div class="meta-item">
-                                <i class="bi bi-calendar-x-fill"></i>
-                                <div>
-                                    <span class="meta-label">Deadline</span>
-                                    {{ data.deadline }}
-                                </div>
-                            </div>
-                            <div class="meta-item">
-                                <i class="bi bi-journal-check"></i>
-                                <div>
-                                    <span class="meta-label">Required Exams</span>
-                                    {{ data.exams_required | default("None specified", true) }}
-                                </div>
-                            </div>
                         </div>
 
                         <div class="section-divider">
@@ -1028,18 +968,6 @@
                                 <span style="color: var(--bio-dim);">{{ data.fellowship_details }}</span>
                             </div>
                             {% endif %}
-                        </div>
-
-                        <div class="section-divider">
-                            <div class="divider-line"></div>
-                            <div class="divider-label">Required Skills</div>
-                            <div class="divider-line"></div>
-                        </div>
-
-                        <div class="tags-row">
-                            {% for skill in data.skills_required.split(',') %}
-                            <span class="tag">{{ skill.strip() }}</span>
-                            {% endfor %}
                         </div>
 
                         <div class="cta-row">
@@ -1106,7 +1034,9 @@
         }
 
         function initParticles() {
-            particles = Array.from({ length: 80 }, createParticle);
+            // Drop particle count drastically to fix lag
+            const count = window.innerWidth < 768 ? 20 : 50;
+            particles = Array.from({ length: count }, createParticle);
         }
 
         function drawParticles() {
@@ -1126,13 +1056,17 @@
 
                 for (let j = i + 1; j < particles.length; j++) {
                     const q = particles[j];
-                    const dx = p.x - q.x, dy = p.y - q.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < 90) {
+                    const dx = p.x - q.x;
+                    const dy = p.y - q.y;
+                    
+                    // MATH OPTIMIZATION: Use Distance Squared to bypass heavy Math.sqrt calculations
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq < 8100) { 
                         ctx.beginPath();
                         ctx.moveTo(p.x, p.y);
                         ctx.lineTo(q.x, q.y);
-                        ctx.strokeStyle = `rgba(0, 255, 163, ${0.07 * (1 - dist / 90)})`;
+                        // Math.sqrt is only run if the line actually needs to be drawn
+                        ctx.strokeStyle = `rgba(0, 255, 163, ${0.07 * (1 - Math.sqrt(distSq) / 90)})`;
                         ctx.lineWidth = 0.6;
                         ctx.stroke();
                     }
@@ -1176,13 +1110,15 @@
             document.getElementById('btn-icon').style.display = 'none';
         }
 
-        /* ── SCI-FI ROUTING INTERSTITIAL CONTROLLER ── */
+        /* ── SAFARI-Bypass ROUTING CONTROLLER ── */
         function executeSecureRouting(targetUrl, itemTitle, isSearchBypass) {
             const overlay = document.getElementById('routingGateway');
             const logsContainer = document.getElementById('gatewayLogs');
             const progressBar = document.getElementById('gatewayProgress');
             
-            // Clear prior sequences
+            // APPLE WEB-KIT FIX: Open the tab synchronously before the timer starts
+            const secureTab = window.open('about:blank', '_blank', 'noopener,noreferrer');
+            
             logsContainer.innerHTML = '';
             progressBar.style.width = '0%';
             overlay.classList.add('active');
@@ -1195,7 +1131,6 @@
                 { text: `ROUTING SUCCESSFUL. OPENING VIRTUAL PORTAL LINK NOW...`, delay: 1550 }
             ];
 
-            // Print sequential logs logs smoothly
             sequences.forEach(seq => {
                 setTimeout(() => {
                     const line = document.createElement('div');
@@ -1206,12 +1141,16 @@
                 }, seq.delay);
             });
 
-            // Fire progress animation bar
             setTimeout(() => { progressBar.style.width = '100%'; }, 50);
 
-            // Execute asynchronous routing launch trigger
             setTimeout(() => {
-                window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                // Route the pre-opened tab to the actual destination
+                if (secureTab) {
+                    secureTab.location.href = targetUrl;
+                } else {
+                    // Fallback just in case they have a hardcore blocker that killed the pre-open
+                    window.location.href = targetUrl; 
+                }
                 setTimeout(() => { overlay.classList.remove('active'); }, 500);
             }, 1950);
         }
