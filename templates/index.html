@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="color-scheme" content="dark light">
+    <meta name="theme-color" id="theme-color-meta" content="#050a12">
+
     <title>BioPath - Intelligence Hub</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
@@ -519,7 +523,6 @@
             text-align: center;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            -webkit-backdrop-filter: blur(5px);
             backdrop-filter: blur(5px);
         }
         .promo-module i { font-size: 2rem; margin-bottom: 10px; color: var(--bio-border); display: block; }
@@ -1126,20 +1129,28 @@
             if (saved === 'light') {
                 document.body.classList.add('light-mode');
                 document.getElementById('theme-icon').className = 'bi bi-sun-fill';
+                // Updates phone status bar on load
+                document.getElementById('theme-color-meta').setAttribute('content', '#f0faf6'); 
             }
         });
 
         function toggleTheme() {
             const body = document.body;
             const icon = document.getElementById('theme-icon');
+            const metaTheme = document.getElementById('theme-color-meta');
+            
             if (body.classList.contains('light-mode')) {
                 body.classList.remove('light-mode');
                 icon.className = 'bi bi-moon-stars-fill';
                 localStorage.setItem('biopathTheme', 'dark');
+                // Lock phone status bar to dark
+                metaTheme.setAttribute('content', '#050a12');
             } else {
                 body.classList.add('light-mode');
                 icon.className = 'bi bi-sun-fill';
                 localStorage.setItem('biopathTheme', 'light');
+                // Lock phone status bar to light
+                metaTheme.setAttribute('content', '#f0faf6');
             }
         }
 

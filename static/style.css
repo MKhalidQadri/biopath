@@ -4,6 +4,8 @@
    Identity: Kashmiri Chinar Integration (User Texture)
 ===================================================== */
 :root {
+    color-scheme: dark light; /* Tells mobile browsers not to forcefully auto-invert */
+    
     --bio: #00ffa3;
     --bio-dim: #00c97a;
     --bio-glow: rgba(0, 255, 163, 0.18);
