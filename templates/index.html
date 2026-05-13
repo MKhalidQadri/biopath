@@ -80,6 +80,7 @@
             z-index: 0;
             opacity: 0.35;
             transform: translateZ(0); 
+            will-change: opacity;
         }
 
         body.light-mode #particle-canvas { opacity: 0.12; }
@@ -558,6 +559,7 @@
         .gateway-overlay {
             position: fixed; inset: 0; background: rgba(5, 10, 18, 0.96); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             z-index: 99999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+            will-change: opacity;
         }
         .gateway-overlay.active { opacity: 1; pointer-events: all; }
         .gateway-terminal {
@@ -968,18 +970,25 @@
 
     <script>
         const canvas = document.getElementById('particle-canvas');
-        const ctx = canvas.getContext('2d');
+        // OPTIMIZATION: Use desynchronized rendering to reduce latency overhead on the GPU
+        const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
         let particles = [];
+        
+        // OPTIMIZATION: Cache canvas dimensions so the loop doesn't read the DOM 1,000+ times per second
+        let cw = 0;
+        let ch = 0;
 
         function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            cw = window.innerWidth;
+            ch = window.innerHeight;
+            canvas.width = cw;
+            canvas.height = ch;
         }
 
         function createParticle() {
             return {
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
+                x: Math.random() * cw,
+                y: Math.random() * ch,
                 vx: (Math.random() - 0.5) * 0.4,
                 vy: (Math.random() - 0.5) * 0.4,
                 r: Math.random() * 1.8 + 0.5,
@@ -988,57 +997,76 @@
         }
 
         function initParticles() {
-            // Drop particle count drastically to fix lag
             const count = window.innerWidth < 768 ? 8 : 20;
             particles = Array.from({ length: count }, createParticle);
         }
 
-        function drawParticles() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let i = 0; i < particles.length; i++) {
-                const p = particles[i];
-                p.x += p.vx; p.y += p.vy;
-                if (p.x < 0) p.x = canvas.width;
-                if (p.x > canvas.width) p.x = 0;
-                if (p.y < 0) p.y = canvas.height;
-                if (p.y > canvas.height) p.y = 0;
+        // OPTIMIZATION: Limit high-refresh rate devices (120Hz iPhones) down to an optimized ~30 FPS
+        let lastDrawTime = 0;
+        const targetFPS = 30;
+        const frameInterval = 1000 / targetFPS;
 
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(0, 255, 163, ${p.a})`;
-                ctx.fill();
+        function drawParticles(timestamp) {
+            requestAnimationFrame(drawParticles);
+            
+            if (!lastDrawTime) lastDrawTime = timestamp;
+            const delta = timestamp - lastDrawTime;
 
-                for (let j = i + 1; j < particles.length; j++) {
-                    const q = particles[j];
-                    const dx = p.x - q.x, dy = p.y - q.y;
-                    
-                    // MATH OPTIMIZATION: Use Distance Squared to bypass heavy Math.sqrt calculations
-                    const distSq = dx * dx + dy * dy;
-                    if (distSq < 8100) { 
-                        ctx.beginPath();
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(q.x, q.y);
-                        // Math.sqrt is only run if the line actually needs to be drawn
-                        ctx.strokeStyle = `rgba(0, 255, 163, ${0.07 * (1 - Math.sqrt(distSq) / 90)})`;
-                        ctx.lineWidth = 0.6;
-                        ctx.stroke();
+            if (delta > frameInterval) {
+                // Adjust for any minor frame timing skips
+                lastDrawTime = timestamp - (delta % frameInterval);
+
+                ctx.clearRect(0, 0, cw, ch);
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0) p.x = cw;
+                    if (p.x > cw) p.x = 0;
+                    if (p.y < 0) p.y = ch;
+                    if (p.y > ch) p.y = 0;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0, 255, 163, ${p.a})`;
+                    ctx.fill();
+
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const q = particles[j];
+                        const dx = p.x - q.x, dy = p.y - q.y;
+                        
+                        const distSq = dx * dx + dy * dy;
+                        if (distSq < 8100) { 
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(q.x, q.y);
+                            ctx.strokeStyle = `rgba(0, 255, 163, ${0.07 * (1 - Math.sqrt(distSq) / 90)})`;
+                            ctx.lineWidth = 0.6;
+                            ctx.stroke();
+                        }
                     }
                 }
             }
-            requestAnimationFrame(drawParticles);
         }
 
         resize();
         initParticles();
         drawParticles();
-        window.addEventListener('resize', () => { resize(); initParticles(); });
+
+        // OPTIMIZATION: Debounce resize events so the browser doesn't freeze when the address bar hides/shows
+        let resizeTimeout;
+        window.addEventListener('resize', () => { 
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                resize(); 
+                initParticles(); 
+            }, 150);
+        }, { passive: true }); // OPTIMIZATION: Passive listener to ensure scroll remains buttery smooth
 
         document.addEventListener('DOMContentLoaded', () => {
             const saved = localStorage.getItem('biopathTheme') || 'dark';
             if (saved === 'light') {
                 document.body.classList.add('light-mode');
                 document.getElementById('theme-icon').className = 'bi bi-sun-fill';
-                // Updates phone status bar on load
                 document.getElementById('theme-color-meta').setAttribute('content', '#f0faf6'); 
             }
         });
@@ -1052,13 +1080,11 @@
                 body.classList.remove('light-mode');
                 icon.className = 'bi bi-moon-stars-fill';
                 localStorage.setItem('biopathTheme', 'dark');
-                // Lock phone status bar to dark
                 metaTheme.setAttribute('content', '#050a12');
             } else {
                 body.classList.add('light-mode');
                 icon.className = 'bi bi-sun-fill';
                 localStorage.setItem('biopathTheme', 'light');
-                // Lock phone status bar to light
                 metaTheme.setAttribute('content', '#f0faf6');
             }
         }
@@ -1102,10 +1128,7 @@
             setTimeout(() => { progressBar.style.width = '100%'; }, 50);
 
             setTimeout(() => {
-                // Route the current tab seamlessly (No blank pages, bypasses all popup blockers)
                 window.location.href = targetUrl;
-                
-                // Hide overlay after they leave, so it's gone if they press the "Back" button
                 setTimeout(() => { overlay.classList.remove('active'); }, 500);
             }, 1950);
         }
